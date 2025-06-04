@@ -1,0 +1,9 @@
+{
+  "timestamp": "20250604_155917",
+  "scan_type": "comprehensive",
+  "targets": "10.1.0.188",
+  "arguments": "-T3 -sS -sV -O -A --version-intensity 5",
+  "xml_file": "output/xml/raw/scan_comprehensive_20250604_155917.xml",
+  "hosts_scanned": 0,
+  "hosts_up": 0
+}

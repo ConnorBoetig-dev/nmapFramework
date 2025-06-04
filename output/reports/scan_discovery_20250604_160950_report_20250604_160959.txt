@@ -1,0 +1,28 @@
+============================================================
+NETWORK SCAN REPORT
+============================================================
+Generated: 2025-06-04 16:09:59
+Scanner: nmap
+Command: nmap -oX - -T3 -sn 10.1.0.0/24
+
+EXECUTIVE SUMMARY
+--------------------
+Total Hosts Scanned: 6
+Hosts Online: 6
+Total Open Ports: 0
+Unique Services: 0
+Security Issues Found: 0
+
+HOST DETAILS
+--------------------
+Host: 10.1.0.245 (No hostname)
+
+Host: 10.1.0.248 (jk-printer.asti-usa.net)
+
+Host: 10.1.0.249 (fnhrpr.asti-usa.net)
+
+Host: 10.1.0.251 (itarprinter.asti-usa.net)
+
+Host: 10.1.0.252 (admin-printer.asti-usa.com)
+
+Host: 10.1.0.254 (fortigate1.asti-usa.net)

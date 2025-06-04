@@ -1,0 +1,1717 @@
+{
+  "scan_info": {
+    "scanner": "nmap",
+    "version": "7.93",
+    "start_time": "Wed Jun  4 16:23:18 2025",
+    "command_line": "nmap -oX - -T3 -sS -sV -O -A --version-intensity 5 10.1.0.0/24"
+  },
+  "hosts": [
+    {
+      "state": "up",
+      "addresses": {
+        "ipv4": "10.1.0.245",
+        "mac": "00:21:B7:D7:AF:99"
+      },
+      "hostnames": [],
+      "ports": [
+        {
+          "port": 21,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "ftp",
+            "product": "Lexmark B2442dw printer ftpd",
+            "version": "MSNGM.050.040",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 443,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "https",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 515,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "printer",
+            "product": "Lexmark lpd service",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 631,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "ipp",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 4000,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "thinprint",
+            "product": "ThinPrint print server",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 5001,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "tcpwrapped",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "8"
+          }
+        },
+        {
+          "port": 9100,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "jetdirect",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 9500,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "ismserver",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        }
+      ],
+      "os": {
+        "matches": [
+          {
+            "name": "Linux 3.2 - 4.9",
+            "accuracy": 96,
+            "line": "65314",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "3.X",
+                "accuracy": 96
+              },
+              {
+                "type": "general purpose",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "4.X",
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "Android 4.1.1",
+            "accuracy": 94,
+            "line": "31081",
+            "classes": [
+              {
+                "type": "media device",
+                "vendor": "Google",
+                "osfamily": "Android",
+                "osgen": "4.1.X",
+                "accuracy": 94
+              }
+            ]
+          },
+          {
+            "name": "Android 4.2.2 (Linux 3.4)",
+            "accuracy": 94,
+            "line": "66568",
+            "classes": [
+              {
+                "type": "phone",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "3.X",
+                "accuracy": 94
+              },
+              {
+                "type": "phone",
+                "vendor": "Google",
+                "osfamily": "Android",
+                "osgen": "4.2.X",
+                "accuracy": 94
+              }
+            ]
+          },
+          {
+            "name": "Linux 3.10 - 4.11",
+            "accuracy": 94,
+            "line": "63439",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "3.X",
+                "accuracy": 94
+              },
+              {
+                "type": "general purpose",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "4.X",
+                "accuracy": 94
+              }
+            ]
+          },
+          {
+            "name": "OpenWrt Chaos Calmer 15.05 (Linux 3.18) or Designated Driver (Linux 4.1 or 4.4)",
+            "accuracy": 93,
+            "line": "66944",
+            "classes": [
+              {
+                "type": "WAP",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "3.X",
+                "accuracy": 93
+              },
+              {
+                "type": "WAP",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "4.X",
+                "accuracy": 93
+              }
+            ]
+          },
+          {
+            "name": "Asus Zenfone 5 (Android 4.4.2)",
+            "accuracy": 93,
+            "line": "8298",
+            "classes": [
+              {
+                "type": "phone",
+                "vendor": "Asus",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 93
+              },
+              {
+                "type": "phone",
+                "vendor": "Google",
+                "osfamily": "Android",
+                "osgen": "4.X",
+                "accuracy": 93
+              }
+            ]
+          },
+          {
+            "name": "CyanogenMod 12 (Android 5.0.2)",
+            "accuracy": 93,
+            "line": "19664",
+            "classes": [
+              {
+                "type": "phone",
+                "vendor": "CyanogenMod",
+                "osfamily": "CyanogenMod",
+                "osgen": "12.X",
+                "accuracy": 93
+              },
+              {
+                "type": "phone",
+                "vendor": "Google",
+                "osfamily": "Android",
+                "osgen": "5.X",
+                "accuracy": 93
+              }
+            ]
+          },
+          {
+            "name": "Android 4.1 - 6.0 (Linux 3.4 - 3.14)",
+            "accuracy": 93,
+            "line": "31406",
+            "classes": [
+              {
+                "type": "phone",
+                "vendor": "Google",
+                "osfamily": "Android",
+                "osgen": "4.X",
+                "accuracy": 93
+              },
+              {
+                "type": "phone",
+                "vendor": "Google",
+                "osfamily": "Android",
+                "osgen": "5.X",
+                "accuracy": 93
+              },
+              {
+                "type": "phone",
+                "vendor": "Google",
+                "osfamily": "Android",
+                "osgen": "6.X",
+                "accuracy": 93
+              },
+              {
+                "type": "phone",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "3.X",
+                "accuracy": 93
+              }
+            ]
+          },
+          {
+            "name": "Linux 3.2 - 3.16",
+            "accuracy": 93,
+            "line": "65142",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "3.X",
+                "accuracy": 93
+              }
+            ]
+          },
+          {
+            "name": "DD-WRT v3.0 (Linux 4.4.2)",
+            "accuracy": 93,
+            "line": "66965",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Linux",
+                "osfamily": "Linux",
+                "osgen": "4.X",
+                "accuracy": 93
+              }
+            ]
+          }
+        ],
+        "ports_used": []
+      },
+      "uptime": {
+        "seconds": "547103",
+        "lastboot": "Thu May 29 08:26:37 2025"
+      }
+    },
+    {
+      "state": "up",
+      "addresses": {
+        "ipv4": "10.1.0.248",
+        "mac": "94:DD:F8:46:40:C7"
+      },
+      "hostnames": [
+        {
+          "name": "jk-printer.asti-usa.net",
+          "type": "PTR"
+        }
+      ],
+      "ports": [
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 443,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "https",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 515,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "printer",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 631,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "ipp",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 9100,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "jetdirect",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        }
+      ],
+      "os": {
+        "matches": [
+          {
+            "name": "VxWorks",
+            "accuracy": 99,
+            "line": "105688",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Wind River",
+                "osfamily": "VxWorks",
+                "osgen": null,
+                "accuracy": 99
+              }
+            ]
+          },
+          {
+            "name": "Keyence CV-X150F Image Sensor/Controller (VxWorks)",
+            "accuracy": 97,
+            "line": "41723",
+            "classes": [
+              {
+                "type": "specialized",
+                "vendor": "Keyence",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              },
+              {
+                "type": "general purpose",
+                "vendor": "Wind River",
+                "osfamily": "VxWorks",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "VxWorks: HP printer or Vocality BASICS Four Wire VoIP gateway",
+            "accuracy": 97,
+            "line": "105949",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Wind River",
+                "osfamily": "VxWorks",
+                "osgen": null,
+                "accuracy": 97
+              },
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              },
+              {
+                "type": "VoIP adapter",
+                "vendor": "Vocality",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet M2727nf or P1505n printer",
+            "accuracy": 96,
+            "line": "34117",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "HP printer (M1120n, M1522n, CP1515n, CP2025dn, or CP2525dn)",
+            "accuracy": 96,
+            "line": "34748",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "NEC Univerge SV8300 PBX",
+            "accuracy": 96,
+            "line": "87191",
+            "classes": [
+              {
+                "type": "PBX",
+                "vendor": "NEC",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "Blackboard transaction system serial-to-IP converter",
+            "accuracy": 96,
+            "line": "10039",
+            "classes": [
+              {
+                "type": "bridge",
+                "vendor": "Blackboard",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet CP2025dn printer",
+            "accuracy": 96,
+            "line": "34007",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet M451dn, CM1415fnw, or CP4525",
+            "accuracy": 96,
+            "line": "34190",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "Verizon FiOS DVR or Teradici PCoIP remote management console",
+            "accuracy": 95,
+            "line": "86728",
+            "classes": [
+              {
+                "type": "media device",
+                "vendor": "Motorola",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 95
+              },
+              {
+                "type": "remote management",
+                "vendor": "Teradici",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 95
+              }
+            ]
+          }
+        ],
+        "ports_used": []
+      },
+      "uptime": {
+        "seconds": "4061948",
+        "lastboot": "Fri Apr 18 16:05:52 2025"
+      }
+    },
+    {
+      "state": "up",
+      "addresses": {
+        "ipv4": "10.1.0.249",
+        "mac": "E0:73:E7:7B:E0:44"
+      },
+      "hostnames": [
+        {
+          "name": "fnhrpr.asti-usa.net",
+          "type": "PTR"
+        }
+      ],
+      "ports": [
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "soap",
+            "product": "gSOAP",
+            "version": "2.7",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 443,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "tcpwrapped",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "8"
+          }
+        },
+        {
+          "port": 515,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "printer",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 631,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "soap",
+            "product": "gSOAP",
+            "version": "2.7",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 8080,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "soap",
+            "product": "gSOAP",
+            "version": "2.7",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 9100,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "jetdirect",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        }
+      ],
+      "os": {
+        "matches": [
+          {
+            "name": "HP LaserJet M451dn, CM1415fnw, or CP4525",
+            "accuracy": 99,
+            "line": "34190",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 99
+              }
+            ]
+          },
+          {
+            "name": "VxWorks",
+            "accuracy": 98,
+            "line": "105688",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Wind River",
+                "osfamily": "VxWorks",
+                "osgen": null,
+                "accuracy": 98
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet M2727nf or P1505n printer",
+            "accuracy": 97,
+            "line": "34117",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "HP printer (M1120n, M1522n, CP1515n, CP2025dn, or CP2525dn)",
+            "accuracy": 97,
+            "line": "34748",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "NEC Univerge SV8300 PBX",
+            "accuracy": 97,
+            "line": "87191",
+            "classes": [
+              {
+                "type": "PBX",
+                "vendor": "NEC",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "Blackboard transaction system serial-to-IP converter",
+            "accuracy": 97,
+            "line": "10039",
+            "classes": [
+              {
+                "type": "bridge",
+                "vendor": "Blackboard",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "IBM System Storage TS3500 tape library",
+            "accuracy": 97,
+            "line": "39190",
+            "classes": [
+              {
+                "type": "storage-misc",
+                "vendor": "IBM",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet M476dw printer",
+            "accuracy": 96,
+            "line": "34209",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "Keyence CV-X150F Image Sensor/Controller (VxWorks)",
+            "accuracy": 96,
+            "line": "41723",
+            "classes": [
+              {
+                "type": "specialized",
+                "vendor": "Keyence",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              },
+              {
+                "type": "general purpose",
+                "vendor": "Wind River",
+                "osfamily": "VxWorks",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "VxWorks: HP printer or Vocality BASICS Four Wire VoIP gateway",
+            "accuracy": 96,
+            "line": "105949",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Wind River",
+                "osfamily": "VxWorks",
+                "osgen": null,
+                "accuracy": 96
+              },
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              },
+              {
+                "type": "VoIP adapter",
+                "vendor": "Vocality",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          }
+        ],
+        "ports_used": []
+      },
+      "uptime": {
+        "seconds": "490186",
+        "lastboot": "Fri May 30 00:15:14 2025"
+      }
+    },
+    {
+      "state": "up",
+      "addresses": {
+        "ipv4": "10.1.0.251",
+        "mac": "78:E3:B5:F9:7A:EE"
+      },
+      "hostnames": [
+        {
+          "name": "itarprinter.asti-usa.net",
+          "type": "PTR"
+        }
+      ],
+      "ports": [
+        {
+          "port": 23,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "telnet",
+            "product": "HP JetDirect telnetd",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "Virata-EmWeb",
+            "version": "6.2.1",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 280,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "Virata-EmWeb",
+            "version": "6.2.1",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 443,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "https",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 515,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "printer",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 9100,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "jetdirect",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        }
+      ],
+      "os": {
+        "matches": [
+          {
+            "name": "HP LaserJet 2055dn, 2420, P3005, CP4005, 4250, P4014, or P4015 printer",
+            "accuracy": 100,
+            "line": "33075",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 100
+              }
+            ]
+          }
+        ],
+        "ports_used": []
+      },
+      "uptime": {
+        "seconds": "6058274",
+        "lastboot": "Wed Mar 26 13:33:46 2025"
+      }
+    },
+    {
+      "state": "up",
+      "addresses": {
+        "ipv4": "10.1.0.252",
+        "mac": "E8:D8:D1:95:A8:E7"
+      },
+      "hostnames": [
+        {
+          "name": "admin-printer.asti-usa.com",
+          "type": "PTR"
+        }
+      ],
+      "ports": [
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "Virata-EmWeb",
+            "version": "6.2.1",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 443,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "HP LaserJet printer http admin",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 515,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "printer",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 631,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "Virata-EmWeb",
+            "version": "6.2.1",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 7627,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "HP LaserJet printer http admin",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "probed",
+            "conf": "10"
+          }
+        },
+        {
+          "port": 9100,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "jetdirect",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        }
+      ],
+      "os": {
+        "matches": [
+          {
+            "name": "HP LaserJet Enterprise M600-series printer",
+            "accuracy": 97,
+            "line": "34081",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 97
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet M525 printer",
+            "accuracy": 96,
+            "line": "34227",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 96
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet CP5520 printer",
+            "accuracy": 93,
+            "line": "34063",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 93
+              }
+            ]
+          },
+          {
+            "name": "HP LaserJet 600 M601, 600 M602, 500 M551, or M830 printer",
+            "accuracy": 93,
+            "line": "33833",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "HP",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 93
+              }
+            ]
+          },
+          {
+            "name": "Xerox ApeosPort-IV C3370 printer",
+            "accuracy": 92,
+            "line": "106479",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "Xerox",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 92
+              }
+            ]
+          },
+          {
+            "name": "National Instruments CompactRIO automation controller",
+            "accuracy": 92,
+            "line": "87122",
+            "classes": [
+              {
+                "type": "specialized",
+                "vendor": "National Instruments",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 92
+              }
+            ]
+          },
+          {
+            "name": "Fujitsu Externus DX80 or IBM DCS9900 NAS device",
+            "accuracy": 91,
+            "line": "39128",
+            "classes": [
+              {
+                "type": "storage-misc",
+                "vendor": "IBM",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 91
+              },
+              {
+                "type": "storage-misc",
+                "vendor": "Fujitsu Siemens",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 91
+              }
+            ]
+          },
+          {
+            "name": "Oki MC342 printer",
+            "accuracy": 91,
+            "line": "90234",
+            "classes": [
+              {
+                "type": "printer",
+                "vendor": "Oki",
+                "osfamily": "embedded",
+                "osgen": null,
+                "accuracy": 91
+              }
+            ]
+          },
+          {
+            "name": "Apple Mac OS X 10.3.9 (Panther) (Darwin 7.9.0, PowerPC)",
+            "accuracy": 91,
+            "line": "5104",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Apple",
+                "osfamily": "Mac OS X",
+                "osgen": "10.3.X",
+                "accuracy": 91
+              }
+            ]
+          },
+          {
+            "name": "Apple Mac OS X 10.3.9 (Panther) - 10.4.7 (Tiger) (Darwin 7.9.0 - 8.7.8, PowerPC)",
+            "accuracy": 91,
+            "line": "5178",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Apple",
+                "osfamily": "Mac OS X",
+                "osgen": "10.3.X",
+                "accuracy": 91
+              },
+              {
+                "type": "general purpose",
+                "vendor": "Apple",
+                "osfamily": "Mac OS X",
+                "osgen": "10.4.X",
+                "accuracy": 91
+              }
+            ]
+          }
+        ],
+        "ports_used": []
+      },
+      "uptime": {
+        "seconds": "1145092",
+        "lastboot": "Thu May 22 10:20:08 2025"
+      }
+    },
+    {
+      "state": "up",
+      "addresses": {
+        "ipv4": "10.1.0.254",
+        "mac": "78:18:EC:94:B1:AA"
+      },
+      "hostnames": [
+        {
+          "name": "fortigate1.asti-usa.net",
+          "type": "PTR"
+        }
+      ],
+      "ports": [
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "http",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 4443,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "pharos",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        }
+      ],
+      "os": {
+        "matches": [
+          {
+            "name": "Microsoft Windows Server 2008 or 2008 Beta 3",
+            "accuracy": 88,
+            "line": "74530",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Microsoft",
+                "osfamily": "Windows",
+                "osgen": "2008",
+                "accuracy": 88
+              }
+            ]
+          },
+          {
+            "name": "Microsoft Windows Vista Home Premium SP1",
+            "accuracy": 88,
+            "line": "79895",
+            "classes": [
+              {
+                "type": "general purpose",
+                "vendor": "Microsoft",
+                "osfamily": "Windows",
+                "osgen": "Vista",
+                "accuracy": 88
+              }
+            ]
+          }
+        ],
+        "ports_used": []
+      },
+      "uptime": {
+        "seconds": "4093912",
+        "lastboot": "Fri Apr 18 07:13:08 2025"
+      }
+    }
+  ],
+  "insights": {
+    "total_hosts": 6,
+    "hosts_up": 6,
+    "total_open_ports": 34,
+    "unique_services": [
+      "https",
+      "printer",
+      "pharos",
+      "jetdirect",
+      "ftp",
+      "http",
+      "tcpwrapped",
+      "thinprint",
+      "ipp",
+      "telnet",
+      "soap",
+      "ismserver"
+    ],
+    "potential_issues": [
+      {
+        "host": "10.1.0.245",
+        "port": 21,
+        "service": "ftp",
+        "issue": "Unencrypted file transfer protocol detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.245",
+        "port": 21,
+        "service": "ftp",
+        "issue": "FTP - Unencrypted file transfer",
+        "severity": "high"
+      },
+      {
+        "host": "10.1.0.245",
+        "port": 80,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.248",
+        "port": 80,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.251",
+        "port": 23,
+        "service": "telnet",
+        "issue": "Unencrypted remote access protocol detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.251",
+        "port": 23,
+        "service": "telnet",
+        "issue": "Telnet - Unencrypted remote access",
+        "severity": "high"
+      },
+      {
+        "host": "10.1.0.251",
+        "port": 80,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.251",
+        "port": 280,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.252",
+        "port": 80,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.252",
+        "port": 443,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.252",
+        "port": 631,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.252",
+        "port": 7627,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      },
+      {
+        "host": "10.1.0.254",
+        "port": 80,
+        "service": "http",
+        "issue": "Unencrypted web service detected",
+        "severity": "medium"
+      }
+    ],
+    "service_versions": {
+      "ftp:21": [
+        {
+          "host": "10.1.0.245",
+          "version": "MSNGM.050.040",
+          "product": "Lexmark B2442dw printer ftpd"
+        }
+      ],
+      "http:80": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.248",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.251",
+          "version": "6.2.1",
+          "product": "Virata-EmWeb"
+        },
+        {
+          "host": "10.1.0.252",
+          "version": "6.2.1",
+          "product": "Virata-EmWeb"
+        },
+        {
+          "host": "10.1.0.254",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "https:443": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.248",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.251",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "printer:515": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": "Lexmark lpd service"
+        },
+        {
+          "host": "10.1.0.248",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.249",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.251",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.252",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "ipp:631": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.248",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "thinprint:4000": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": "ThinPrint print server"
+        }
+      ],
+      "tcpwrapped:5001": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "jetdirect:9100": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.248",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.249",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.251",
+          "version": "",
+          "product": ""
+        },
+        {
+          "host": "10.1.0.252",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "ismserver:9500": [
+        {
+          "host": "10.1.0.245",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "soap:80": [
+        {
+          "host": "10.1.0.249",
+          "version": "2.7",
+          "product": "gSOAP"
+        }
+      ],
+      "tcpwrapped:443": [
+        {
+          "host": "10.1.0.249",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "soap:631": [
+        {
+          "host": "10.1.0.249",
+          "version": "2.7",
+          "product": "gSOAP"
+        }
+      ],
+      "soap:8080": [
+        {
+          "host": "10.1.0.249",
+          "version": "2.7",
+          "product": "gSOAP"
+        }
+      ],
+      "telnet:23": [
+        {
+          "host": "10.1.0.251",
+          "version": "",
+          "product": "HP JetDirect telnetd"
+        }
+      ],
+      "http:280": [
+        {
+          "host": "10.1.0.251",
+          "version": "6.2.1",
+          "product": "Virata-EmWeb"
+        }
+      ],
+      "http:443": [
+        {
+          "host": "10.1.0.252",
+          "version": "",
+          "product": "HP LaserJet printer http admin"
+        }
+      ],
+      "http:631": [
+        {
+          "host": "10.1.0.252",
+          "version": "6.2.1",
+          "product": "Virata-EmWeb"
+        }
+      ],
+      "http:7627": [
+        {
+          "host": "10.1.0.252",
+          "version": "",
+          "product": "HP LaserJet printer http admin"
+        }
+      ],
+      "pharos:4443": [
+        {
+          "host": "10.1.0.254",
+          "version": "",
+          "product": ""
+        }
+      ]
+    },
+    "os_distribution": {
+      "Linux 3.2 - 4.9": 1,
+      "VxWorks": 1,
+      "HP LaserJet M451dn, CM1415fnw, or CP4525": 1,
+      "HP LaserJet 2055dn, 2420, P3005, CP4005, 4250, P4014, or P4015 printer": 1,
+      "HP LaserJet Enterprise M600-series printer": 1,
+      "Microsoft Windows Server 2008 or 2008 Beta 3": 1
+    }
+  }
+}

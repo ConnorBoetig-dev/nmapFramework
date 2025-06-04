@@ -1,0 +1,655 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scan Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .summary-card { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff; }
+        .summary-card h3 { margin: 0 0 10px 0; color: #495057; font-size: 14px; text-transform: uppercase; }
+        .summary-card .value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .section { margin-bottom: 30px; }
+        .section-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+        .alert { padding: 12px; border-radius: 6px; margin-bottom: 10px; }
+        .alert-high { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .alert-medium { background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .host-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .host-header { font-weight: bold; color: #495057; margin-bottom: 10px; }
+        .port-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+        .port-item { background: white; padding: 8px; border-radius: 4px; border-left: 3px solid #28a745; font-family: monospace; font-size: 12px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .stats-table { width: 100%; border-collapse: collapse; }
+        .stats-table th, .stats-table td { padding: 8px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        .stats-table th { background-color: #f8f9fa; font-weight: bold; }
+        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Network Scan Report</h1>
+            <p>Generated: 2025-06-04 16:25:00</p>
+            <p>Scanner: nmap 7.93</p>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>Total Hosts</h3>
+                <div class="value">6</div>
+            </div>
+            <div class="summary-card">
+                <h3>Hosts Online</h3>
+                <div class="value">6</div>
+            </div>
+            <div class="summary-card">
+                <h3>Open Ports</h3>
+                <div class="value">34</div>
+            </div>
+            <div class="summary-card">
+                <h3>Services Found</h3>
+                <div class="value">12</div>
+            </div>
+            <div class="summary-card">
+                <h3>Security Issues</h3>
+                <div class="value" style="color: #dc3545;">13</div>
+            </div>
+        </div>
+
+        <!-- Security Issues -->
+        
+        <div class="section">
+            <div class="section-title">🔒 Security Concerns</div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.245:21</strong> - Unencrypted file transfer protocol detected
+                <br><small>Service: ftp | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-high">
+                <strong>10.1.0.245:21</strong> - FTP - Unencrypted file transfer
+                <br><small>Service: ftp | Severity: HIGH</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.245:80</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.248:80</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.251:23</strong> - Unencrypted remote access protocol detected
+                <br><small>Service: telnet | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-high">
+                <strong>10.1.0.251:23</strong> - Telnet - Unencrypted remote access
+                <br><small>Service: telnet | Severity: HIGH</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.251:80</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.251:280</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.252:80</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.252:443</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.252:631</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.252:7627</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+            <div class="alert alert-medium">
+                <strong>10.1.0.254:80</strong> - Unencrypted web service detected
+                <br><small>Service: http | Severity: MEDIUM</small>
+            </div>
+            
+        </div>
+        
+
+        <!-- Statistics -->
+        <div class="section">
+            <div class="section-title">📊 Network Statistics</div>
+            <div class="stats-grid">
+                <div>
+                    <h4>Top Services</h4>
+                    <table class="stats-table">
+                        <thead>
+                            <tr><th>Service</th><th>Count</th></tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr><td>http</td><td>9</td></tr>
+                            
+                            <tr><td>printer</td><td>5</td></tr>
+                            
+                            <tr><td>jetdirect</td><td>5</td></tr>
+                            
+                            <tr><td>https</td><td>3</td></tr>
+                            
+                            <tr><td>soap</td><td>3</td></tr>
+                            
+                            <tr><td>ipp</td><td>2</td></tr>
+                            
+                            <tr><td>tcpwrapped</td><td>2</td></tr>
+                            
+                            <tr><td>ftp</td><td>1</td></tr>
+                            
+                            <tr><td>thinprint</td><td>1</td></tr>
+                            
+                            <tr><td>ismserver</td><td>1</td></tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <h4>Common Ports</h4>
+                    <table class="stats-table">
+                        <thead>
+                            <tr><th>Port</th><th>Count</th></tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr><td>80</td><td>6</td></tr>
+                            
+                            <tr><td>443</td><td>5</td></tr>
+                            
+                            <tr><td>515</td><td>5</td></tr>
+                            
+                            <tr><td>9100</td><td>5</td></tr>
+                            
+                            <tr><td>631</td><td>4</td></tr>
+                            
+                            <tr><td>21</td><td>1</td></tr>
+                            
+                            <tr><td>4000</td><td>1</td></tr>
+                            
+                            <tr><td>5001</td><td>1</td></tr>
+                            
+                            <tr><td>9500</td><td>1</td></tr>
+                            
+                            <tr><td>8080</td><td>1</td></tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            
+            <div style="margin-top: 20px;">
+                <h4>Operating Systems</h4>
+                <table class="stats-table">
+                    <thead>
+                        <tr><th>Operating System</th><th>Count</th></tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr><td>Linux 3.2 - 4.9</td><td>1</td></tr>
+                        
+                        <tr><td>VxWorks</td><td>1</td></tr>
+                        
+                        <tr><td>HP LaserJet M451dn, CM1415fnw, or CP4525</td><td>1</td></tr>
+                        
+                        <tr><td>HP LaserJet 2055dn, 2420, P3005, CP4005, 4250, P4014, or P4015 printer</td><td>1</td></tr>
+                        
+                        <tr><td>HP LaserJet Enterprise M600-series printer</td><td>1</td></tr>
+                        
+                        <tr><td>Microsoft Windows Server 2008 or 2008 Beta 3</td><td>1</td></tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+            
+        </div>
+
+        <!-- Host Details -->
+        <div class="section">
+            <div class="section-title">🖥️ Host Details</div>
+            
+            <div class="host-card">
+                <div class="host-header">
+                    10.1.0.245
+                    
+                </div>
+                
+                
+                    
+                    
+                    <p><strong>OS:</strong> Linux 3.2 - 4.9 (96% confidence)</p>
+                    
+                
+
+                
+                <p><strong>Uptime:</strong> 547103 seconds</p>
+                
+
+                
+                
+                <p><strong>Open Ports (9):</strong></p>
+                <div class="port-list">
+                    
+                    <div class="port-item">
+                        <strong>21/tcp</strong><br>
+                        ftp
+                        
+                            <br>Lexmark B2442dw printer ftpd
+                            MSNGM.050.040
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>80/tcp</strong><br>
+                        http
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>443/tcp</strong><br>
+                        https
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>515/tcp</strong><br>
+                        printer
+                        
+                            <br>Lexmark lpd service
+                            
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>631/tcp</strong><br>
+                        ipp
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>4000/tcp</strong><br>
+                        thinprint
+                        
+                            <br>ThinPrint print server
+                            
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>5001/tcp</strong><br>
+                        tcpwrapped
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>9100/tcp</strong><br>
+                        jetdirect
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>9500/tcp</strong><br>
+                        ismserver
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="host-card">
+                <div class="host-header">
+                    10.1.0.248
+                    
+                        (jk-printer.asti-usa.net)
+                    
+                </div>
+                
+                
+                    
+                    
+                    <p><strong>OS:</strong> VxWorks (99% confidence)</p>
+                    
+                
+
+                
+                <p><strong>Uptime:</strong> 4061948 seconds</p>
+                
+
+                
+                
+                <p><strong>Open Ports (5):</strong></p>
+                <div class="port-list">
+                    
+                    <div class="port-item">
+                        <strong>80/tcp</strong><br>
+                        http
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>443/tcp</strong><br>
+                        https
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>515/tcp</strong><br>
+                        printer
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>631/tcp</strong><br>
+                        ipp
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>9100/tcp</strong><br>
+                        jetdirect
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="host-card">
+                <div class="host-header">
+                    10.1.0.249
+                    
+                        (fnhrpr.asti-usa.net)
+                    
+                </div>
+                
+                
+                    
+                    
+                    <p><strong>OS:</strong> HP LaserJet M451dn, CM1415fnw, or CP4525 (99% confidence)</p>
+                    
+                
+
+                
+                <p><strong>Uptime:</strong> 490186 seconds</p>
+                
+
+                
+                
+                <p><strong>Open Ports (6):</strong></p>
+                <div class="port-list">
+                    
+                    <div class="port-item">
+                        <strong>80/tcp</strong><br>
+                        soap
+                        
+                            <br>gSOAP
+                            2.7
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>443/tcp</strong><br>
+                        tcpwrapped
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>515/tcp</strong><br>
+                        printer
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>631/tcp</strong><br>
+                        soap
+                        
+                            <br>gSOAP
+                            2.7
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>8080/tcp</strong><br>
+                        soap
+                        
+                            <br>gSOAP
+                            2.7
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>9100/tcp</strong><br>
+                        jetdirect
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="host-card">
+                <div class="host-header">
+                    10.1.0.251
+                    
+                        (itarprinter.asti-usa.net)
+                    
+                </div>
+                
+                
+                    
+                    
+                    <p><strong>OS:</strong> HP LaserJet 2055dn, 2420, P3005, CP4005, 4250, P4014, or P4015 printer (100% confidence)</p>
+                    
+                
+
+                
+                <p><strong>Uptime:</strong> 6058274 seconds</p>
+                
+
+                
+                
+                <p><strong>Open Ports (6):</strong></p>
+                <div class="port-list">
+                    
+                    <div class="port-item">
+                        <strong>23/tcp</strong><br>
+                        telnet
+                        
+                            <br>HP JetDirect telnetd
+                            
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>80/tcp</strong><br>
+                        http
+                        
+                            <br>Virata-EmWeb
+                            6.2.1
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>280/tcp</strong><br>
+                        http
+                        
+                            <br>Virata-EmWeb
+                            6.2.1
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>443/tcp</strong><br>
+                        https
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>515/tcp</strong><br>
+                        printer
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>9100/tcp</strong><br>
+                        jetdirect
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="host-card">
+                <div class="host-header">
+                    10.1.0.252
+                    
+                        (admin-printer.asti-usa.com)
+                    
+                </div>
+                
+                
+                    
+                    
+                    <p><strong>OS:</strong> HP LaserJet Enterprise M600-series printer (97% confidence)</p>
+                    
+                
+
+                
+                <p><strong>Uptime:</strong> 1145092 seconds</p>
+                
+
+                
+                
+                <p><strong>Open Ports (6):</strong></p>
+                <div class="port-list">
+                    
+                    <div class="port-item">
+                        <strong>80/tcp</strong><br>
+                        http
+                        
+                            <br>Virata-EmWeb
+                            6.2.1
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>443/tcp</strong><br>
+                        http
+                        
+                            <br>HP LaserJet printer http admin
+                            
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>515/tcp</strong><br>
+                        printer
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>631/tcp</strong><br>
+                        http
+                        
+                            <br>Virata-EmWeb
+                            6.2.1
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>7627/tcp</strong><br>
+                        http
+                        
+                            <br>HP LaserJet printer http admin
+                            
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>9100/tcp</strong><br>
+                        jetdirect
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="host-card">
+                <div class="host-header">
+                    10.1.0.254
+                    
+                        (fortigate1.asti-usa.net)
+                    
+                </div>
+                
+                
+                    
+                    
+                    <p><strong>OS:</strong> Microsoft Windows Server 2008 or 2008 Beta 3 (88% confidence)</p>
+                    
+                
+
+                
+                <p><strong>Uptime:</strong> 4093912 seconds</p>
+                
+
+                
+                
+                <p><strong>Open Ports (2):</strong></p>
+                <div class="port-list">
+                    
+                    <div class="port-item">
+                        <strong>80/tcp</strong><br>
+                        http
+                        
+                    </div>
+                    
+                    <div class="port-item">
+                        <strong>4443/tcp</strong><br>
+                        pharos
+                        
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+        </div>
+
+        <div class="footer">
+            <p>Report generated by Network Mapping Framework</p>
+            <p>Scan command: nmap -oX - -T3 -sS -sV -O -A --version-intensity 5 10.1.0.0/24</p>
+        </div>
+    </div>
+</body>
+</html>
+        

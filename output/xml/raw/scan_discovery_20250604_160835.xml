@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.93 scan initiated Wed Jun  4 16:08:35 2025 as: nmap -oX - -T3 -sn 10.1.0.0/24 -->
+<nmaprun scanner="nmap" args="nmap -oX - -T3 -sn 10.1.0.0/24" start="1749067715" startstr="Wed Jun  4 16:08:35 2025" version="7.93" xmloutputversion="1.05">
+<verbose level="0"/>
+<debugging level="0"/>
+<host><status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="10.1.0.245" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+<times srtt="12967" rttvar="12967" to="100000"/>
+</host>
+<host><status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="10.1.0.248" addrtype="ipv4"/>
+<hostnames>
+<hostname name="jk-printer.asti-usa.net" type="PTR"/>
+</hostnames>
+<times srtt="31516" rttvar="31516" to="157580"/>
+</host>
+<host><status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="10.1.0.249" addrtype="ipv4"/>
+<hostnames>
+<hostname name="fnhrpr.asti-usa.net" type="PTR"/>
+</hostnames>
+<times srtt="4948" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="10.1.0.251" addrtype="ipv4"/>
+<hostnames>
+<hostname name="itarprinter.asti-usa.net" type="PTR"/>
+</hostnames>
+<times srtt="4587" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="10.1.0.252" addrtype="ipv4"/>
+<hostnames>
+<hostname name="admin-printer.asti-usa.com" type="PTR"/>
+</hostnames>
+<times srtt="1347" rttvar="3938" to="100000"/>
+</host>
+<host><status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="10.1.0.254" addrtype="ipv4"/>
+<hostnames>
+<hostname name="fortigate1.asti-usa.net" type="PTR"/>
+</hostnames>
+<times srtt="3014" rttvar="5000" to="100000"/>
+</host>
+<runstats><finished time="1749067723" timestr="Wed Jun  4 16:08:43 2025" summary="Nmap done at Wed Jun  4 16:08:43 2025; 256 IP addresses (6 hosts up) scanned in 7.94 seconds" elapsed="7.94" exit="success"/><hosts up="6" down="250" total="256"/>
+</runstats>
+</nmaprun>

@@ -1,0 +1,9 @@
+{
+  "timestamp": "20250604_160835",
+  "scan_type": "discovery",
+  "targets": "10.1.0.0/24",
+  "arguments": "-T3 -sn",
+  "xml_file": "output/xml/raw/scan_discovery_20250604_160835.xml",
+  "hosts_scanned": 6,
+  "hosts_up": 6
+}

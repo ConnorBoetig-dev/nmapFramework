@@ -1,0 +1,91 @@
+{
+  "scan_info": {
+    "scanner": "nmap",
+    "version": "7.93",
+    "start_time": "Wed Jun  4 17:09:37 2025",
+    "command_line": "nmap -oX - -T3 -F --version-intensity 0 127.0.0.1"
+  },
+  "hosts": [
+    {
+      "state": "up",
+      "addresses": {
+        "ipv4": "127.0.0.1"
+      },
+      "hostnames": [
+        {
+          "name": "localhost",
+          "type": "PTR"
+        }
+      ],
+      "ports": [
+        {
+          "port": 22,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "ssh",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        },
+        {
+          "port": 631,
+          "protocol": "tcp",
+          "state": "open",
+          "reason": "syn-ack",
+          "service": {
+            "name": "ipp",
+            "product": "",
+            "version": "",
+            "extrainfo": "",
+            "ostype": "",
+            "method": "table",
+            "conf": "3"
+          }
+        }
+      ],
+      "os": {},
+      "uptime": null
+    }
+  ],
+  "insights": {
+    "total_hosts": 1,
+    "hosts_up": 1,
+    "total_open_ports": 2,
+    "unique_services": [
+      "ssh",
+      "ipp"
+    ],
+    "potential_issues": [
+      {
+        "host": "127.0.0.1",
+        "port": 22,
+        "service": "ssh",
+        "issue": "SSH service detected - ensure strong authentication",
+        "severity": "medium"
+      }
+    ],
+    "service_versions": {
+      "ssh:22": [
+        {
+          "host": "127.0.0.1",
+          "version": "",
+          "product": ""
+        }
+      ],
+      "ipp:631": [
+        {
+          "host": "127.0.0.1",
+          "version": "",
+          "product": ""
+        }
+      ]
+    },
+    "os_distribution": {}
+  }
+}
