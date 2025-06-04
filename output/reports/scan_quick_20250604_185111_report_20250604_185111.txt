@@ -1,0 +1,28 @@
+============================================================
+NETWORK SCAN REPORT
+============================================================
+Generated: 2025-06-04 18:51:11
+Scanner: nmap
+Command: nmap -oX - -T4 -F --version-intensity 0 10.1.100.32
+
+EXECUTIVE SUMMARY
+--------------------
+Total Hosts Scanned: 1
+Hosts Online: 1
+Total Open Ports: 1
+Unique Services: 1
+Security Issues Found: 1
+
+SECURITY CONCERNS
+--------------------
+🟡 10.1.100.32:22 - SSH service detected - ensure strong authentication
+
+SERVICES DETECTED
+--------------------
+ssh: 1 instances
+
+HOST DETAILS
+--------------------
+Host: 10.1.100.32 (No hostname)
+  Open Ports: 1
+    22/tcp: ssh
