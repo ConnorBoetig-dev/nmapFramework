@@ -1,0 +1,18 @@
+{
+  "timestamp": "20250605_074456",
+  "scan_type": "quick",
+  "targets": "10.1.100.32",
+  "arguments": "-T3 -F --version-intensity 0",
+  "description": "Quick scan - top 100 ports",
+  "estimated_time": "1-2 minutes",
+  "xml_file": "output/xml/raw/scan_quick_20250605_074456.xml",
+  "hosts_scanned": 1,
+  "hosts_up": 1,
+  "total_ports_scanned": 1,
+  "open_ports_found": 1,
+  "scan_stats": {
+    "elapsed_time": "0.04",
+    "up_hosts": "1",
+    "down_hosts": "0"
+  }
+}
