@@ -1,9 +1,0 @@
-{
-  "timestamp": "20250604_165029",
-  "scan_type": "quick",
-  "targets": "127.0.0.1",
-  "arguments": "-T3 -F --version-intensity 0",
-  "xml_file": "output/xml/raw/scan_quick_20250604_165029.xml",
-  "hosts_scanned": 1,
-  "hosts_up": 1
-}
