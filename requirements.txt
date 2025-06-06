@@ -14,6 +14,13 @@ pandas>=2.0.0
 # Progress bars (if used in code)
 tqdm>=4.64.0
 
+# Hardware inventory dependencies
+pysnmp>=4.4.12           # SNMP inventory collection
+paramiko>=3.0.0          # SSH connectivity for Linux/Unix inventory
+wmi>=1.5.1 ; sys_platform == 'win32'  # WMI for Windows inventory (Windows only)
+mac-vendor-lookup>=0.1.12  # MAC address vendor identification
+pyyaml>=6.0             # Configuration file support
+
 # Optional but recommended
 requests>=2.28.0
 python-dateutil>=2.8.0

@@ -1,0 +1,152 @@
+# Network Mapper Hardware Inventory Configuration - NO CREDENTIALS VERSION
+# This configuration is optimized for users without any device credentials
+# The tool will only collect publicly available information
+
+# SNMP Settings
+snmp:
+  # Try the default public community (many devices still use it)
+  # But timeout quickly if it doesn't work
+  community: public
+  # Reduced timeout - fail fast if no SNMP access
+  timeout: 2
+  # Only retry once to speed up scanning
+  retries: 1
+  # No custom OIDs since we don't have specific device access
+  custom_oids: {}
+
+# SSH Settings (for Linux/Unix inventory)
+ssh:
+  # Empty username = skip SSH inventory entirely
+  username: ""
+  # Empty password = don't attempt connection
+  password: ""
+  # No key file
+  key_file: ""
+  # Reduced timeout (not used when username is empty)
+  timeout: 5
+  # Commands won't run without credentials
+  commands: []
+
+# WMI Settings (for Windows inventory)
+wmi:
+  # Empty username = skip WMI inventory entirely
+  username: ""
+  # Empty password = don't attempt connection
+  password: ""
+  # Domain not needed without credentials
+  domain: ""
+
+# SSL/TLS Certificate Analysis
+# This works WITHOUT credentials - certificates are public!
+ssl:
+  # Quick timeout for certificate fetching
+  timeout: 3
+  # Still check certificate validity
+  check_validity: true
+  # Warn about certificates expiring within 30 days
+  warning_days: 30
+
+# Performance Settings
+# Use more workers since we're doing less work per host
+max_workers: 20
+
+# Network Settings
+# Shorter timeout since we're only doing quick checks
+network_timeout: 10
+
+# Reporting Settings
+reporting:
+  # Still include hardware info (MAC vendors, certs, etc.)
+  include_hardware: true
+  # Include certificate info in reports
+  include_certificates: true
+  # Severity thresholds for findings
+  severity_thresholds:
+    expired_cert: high
+    expiring_cert: medium
+    self_signed_cert: low
+
+# Device Classification Overrides
+# You can still override device detection based on IP patterns
+device_overrides: []
+  # Examples - uncomment and modify as needed:
+  # - pattern: "192.168.1.1"
+  #   type: "router"
+  # - pattern: "192.168.1.100-110"
+  #   type: "server"
+  # - pattern: "printer.*\\.local"
+  #   type: "printer"
+  # - pattern: "10.0.50.*"
+  #   type: "iot"
+
+# Exclusions
+# Skip these hosts entirely during inventory collection
+exclude_hosts: []
+  # Examples - uncomment to exclude:
+  # - 192.168.1.255    # Broadcast address
+  # - 10.0.0.0         # Network address
+  # - test.example.com # Test host
+
+# Quick Skip Settings
+quick_skip:
+  # Skip credential prompts entirely
+  skip_credential_prompts: true
+  # What to collect without credentials:
+  collect_mac_vendors: true      # MAC address vendor lookup
+  collect_certificates: true     # SSL/TLS certificates
+  collect_service_banners: true  # Service version from nmap
+  collect_device_types: true     # Device classification
+  # What to skip without credentials:
+  skip_snmp_on_timeout: true     # Don't wait for SNMP timeouts
+  skip_ssh_without_creds: true   # Don't attempt SSH
+  skip_wmi_without_creds: true   # Don't attempt WMI
+
+# Fallback Identification Methods
+# These work without any credentials
+fallback_methods:
+  # Use HTTP headers for device identification
+  check_http_headers: true
+  # Check for well-known device URLs
+  check_device_urls:
+    - /admin           # Common admin panels
+    - /login.htm       # Network devices
+    - /index.asp       # Older devices
+  # Use mDNS/Bonjour names if available
+  use_mdns: true
+  # Check NetBIOS names (Windows)
+  use_netbios: true
+
+# Logging
+logging:
+  # INFO level is good for normal operation
+  level: INFO
+  # Create logs directory if it doesn't exist
+  file: logs/hardware_inventory.log
+  # Don't log credential failures (there won't be any)
+  suppress_auth_errors: true
+
+# No-Credential Mode Messages
+messages:
+  # Message shown when starting inventory
+  start_message: "Running credential-free inventory (MAC vendors, certificates, service detection)"
+  # Message shown when SNMP fails
+  snmp_fail_message: "SNMP not accessible (this is normal without credentials)"
+  # Message shown in reports
+  no_creds_notice: "Hardware details limited - no device credentials provided"
+
+# Cache Settings
+# Cache MAC vendor lookups to speed up subsequent scans
+cache:
+  enable_mac_cache: true
+  mac_cache_file: .mac_vendor_cache.json
+  cache_ttl_days: 30
+
+# Passive Information Gathering
+# These methods work without touching the target devices
+passive:
+  # Use public threat intelligence feeds
+  check_reputation: false  # Set to true if you want IP reputation data
+  # Use OSINT sources
+  use_osint: false        # Set to true for additional public data
+  # Check certificate transparency logs
+  check_ct_logs: false    # Set to true for certificate history

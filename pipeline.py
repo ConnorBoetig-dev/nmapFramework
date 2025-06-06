@@ -417,6 +417,62 @@ def run_scan_pipeline(target, scan_type, report_format, xml_file=None, no_open=F
     
     print(f"{Fore.GREEN}✅ Parsing completed: {parsed_file}{Style.RESET_ALL}")
     
+    # Step 2.5: Device Classification and Hardware Inventory
+    if not no_open:  # Only run interactively if not in batch mode
+        print_section("🔧 Asset Inventory & Classification")
+        
+        # Device Classification
+        print(f"{Fore.BLUE}🤖 Running device classification...{Style.RESET_ALL}")
+        try:
+            from device_classifier import DeviceClassifier
+            classifier = DeviceClassifier()
+            
+            # Load parsed data
+            with open(parsed_file, 'r') as f:
+                scan_data = json.load(f)
+            
+            # Classify each host
+            for host in scan_data['hosts']:
+                classification = classifier.classify_device(host)
+                host['device_classification'] = classification
+                
+                ip = host['addresses'].get('ipv4', 'unknown')
+                print(f"  {ip}: {classification['device_type']} (confidence: {classification['confidence']})")
+            
+            # Ask about hardware inventory
+            inventory_choice = input(f"\n{Fore.GREEN}Run hardware & certificate inventory for discovered hosts? [Y/n] ▸{Style.RESET_ALL} ").strip().lower()
+            
+            if inventory_choice != 'n':
+                from hardware_inventory import HardwareInventory
+                
+                # Check for config file
+                config_file = Path("config/config.yml")
+                if not config_file.exists():
+                    config_file = None
+                    print(f"{Fore.YELLOW}ℹ️  No config file found. Will prompt for credentials.{Style.RESET_ALL}")
+                
+                inventory = HardwareInventory(config_file)
+                
+                # Enrich hosts with hardware data
+                print(f"\n{Fore.CYAN}⏱️  This may take several minutes depending on network size and response times...{Style.RESET_ALL}")
+                enriched_hosts = inventory.enrich_hosts(scan_data['hosts'])
+                scan_data['hosts'] = enriched_hosts
+                
+                # Count enriched hosts
+                enriched_count = sum(1 for h in enriched_hosts if h.get('hardware_info'))
+                print(f"\n{Fore.GREEN}📊 Enriched {enriched_count}/{len(enriched_hosts)} hosts with hardware data{Style.RESET_ALL}")
+            
+            # Save enriched data back
+            with open(parsed_file, 'w') as f:
+                json.dump(scan_data, f, indent=2)
+                
+        except ImportError as e:
+            print(f"{Fore.YELLOW}⚠️  Asset inventory modules not available: {e}{Style.RESET_ALL}")
+            print("Continuing with basic parsing only...")
+        except Exception as e:
+            print(f"{Fore.RED}❌ Error during asset inventory: {e}{Style.RESET_ALL}")
+            print("Continuing with report generation...")
+    
     # Step 3: Report Generation
     print(f"{Fore.BLUE}📊 Generating reports...{Style.RESET_ALL}")
     

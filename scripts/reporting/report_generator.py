@@ -82,10 +82,13 @@ class ReportGenerator:
         
         try:
             with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-                # Define CSV fields
+                # Define CSV fields (expanded with hardware inventory)
                 fieldnames = [
                     'ip_address', 'hostname', 'state', 'os', 'os_accuracy',
+                    'device_type', 'fingerprint_confidence', 'mac_vendor',
+                    'model', 'serial_number', 'firmware', 'manufacturer',
                     'port', 'protocol', 'service', 'product', 'version',
+                    'cert_cn', 'cert_expiry', 'cert_issuer',
                     'severity', 'issue', 'risk_score'
                 ]
                 
@@ -105,6 +108,33 @@ class ReportGenerator:
                         best_os = max(host['os']['matches'], key=lambda x: x['accuracy'])
                         os_name = best_os['name']
                         os_accuracy = best_os['accuracy']
+                    
+                    # Get device classification
+                    device_type = ''
+                    fingerprint_confidence = 0
+                    if 'device_classification' in host:
+                        device_type = host['device_classification'].get('device_type', '')
+                        fingerprint_confidence = host['device_classification'].get('confidence', 0)
+                    
+                    # Get hardware info
+                    hardware_info = host.get('hardware_info', {})
+                    mac_vendor = hardware_info.get('mac_vendor', '')
+                    model = hardware_info.get('model', hardware_info.get('printer_model', ''))
+                    serial = hardware_info.get('serial_number', hardware_info.get('printer_serial', ''))
+                    firmware = hardware_info.get('firmware', '')
+                    manufacturer = hardware_info.get('manufacturer', hardware_info.get('vendor', ''))
+                    
+                    # Get certificate info
+                    cert_cn = ''
+                    cert_expiry = ''
+                    cert_issuer = ''
+                    if 'certificates' in hardware_info:
+                        for cert in hardware_info['certificates']:
+                            if cert.get('port') == 443:  # Primary HTTPS cert
+                                cert_cn = cert.get('common_name', '')
+                                cert_expiry = cert.get('not_after', '')
+                                cert_issuer = cert.get('issuer', '')
+                                break
                     
                     # Get open ports
                     open_ports = [p for p in host['ports'] if p['state'] == 'open']
@@ -127,11 +157,21 @@ class ReportGenerator:
                                         'state': state,
                                         'os': os_name,
                                         'os_accuracy': os_accuracy,
+                                        'device_type': device_type,
+                                        'fingerprint_confidence': fingerprint_confidence,
+                                        'mac_vendor': mac_vendor,
+                                        'model': model,
+                                        'serial_number': serial,
+                                        'firmware': firmware,
+                                        'manufacturer': manufacturer,
                                         'port': port['port'],
                                         'protocol': port['protocol'],
                                         'service': port['service'].get('name', 'unknown'),
                                         'product': port['service'].get('product', ''),
                                         'version': port['service'].get('version', ''),
+                                        'cert_cn': cert_cn if port['port'] in [443, 8443] else '',
+                                        'cert_expiry': cert_expiry if port['port'] in [443, 8443] else '',
+                                        'cert_issuer': cert_issuer if port['port'] in [443, 8443] else '',
                                         'severity': issue['severity'],
                                         'issue': issue['issue'],
                                         'risk_score': self._calculate_port_risk_score(port, issue)
@@ -144,11 +184,21 @@ class ReportGenerator:
                                     'state': state,
                                     'os': os_name,
                                     'os_accuracy': os_accuracy,
+                                    'device_type': device_type,
+                                    'fingerprint_confidence': fingerprint_confidence,
+                                    'mac_vendor': mac_vendor,
+                                    'model': model,
+                                    'serial_number': serial,
+                                    'firmware': firmware,
+                                    'manufacturer': manufacturer,
                                     'port': port['port'],
                                     'protocol': port['protocol'],
                                     'service': port['service'].get('name', 'unknown'),
                                     'product': port['service'].get('product', ''),
                                     'version': port['service'].get('version', ''),
+                                    'cert_cn': cert_cn if port['port'] in [443, 8443] else '',
+                                    'cert_expiry': cert_expiry if port['port'] in [443, 8443] else '',
+                                    'cert_issuer': cert_issuer if port['port'] in [443, 8443] else '',
                                     'severity': '',
                                     'issue': '',
                                     'risk_score': self._calculate_port_risk_score(port, None)
@@ -161,11 +211,21 @@ class ReportGenerator:
                             'state': state,
                             'os': os_name,
                             'os_accuracy': os_accuracy,
+                            'device_type': device_type,
+                            'fingerprint_confidence': fingerprint_confidence,
+                            'mac_vendor': mac_vendor,
+                            'model': model,
+                            'serial_number': serial,
+                            'firmware': firmware,
+                            'manufacturer': manufacturer,
                             'port': '',
                             'protocol': '',
                             'service': '',
                             'product': '',
                             'version': '',
+                            'cert_cn': '',
+                            'cert_expiry': '',
+                            'cert_issuer': '',
                             'severity': '',
                             'issue': '',
                             'risk_score': 0
@@ -179,11 +239,21 @@ class ReportGenerator:
                     'state': '',
                     'os': '',
                     'os_accuracy': '',
+                    'device_type': '',
+                    'fingerprint_confidence': '',
+                    'mac_vendor': '',
+                    'model': '',
+                    'serial_number': '',
+                    'firmware': '',
+                    'manufacturer': '',
                     'port': '',
                     'protocol': '',
                     'service': '',
                     'product': '',
                     'version': '',
+                    'cert_cn': '',
+                    'cert_expiry': '',
+                    'cert_issuer': '',
                     'severity': '',
                     'issue': '',
                     'risk_score': ''
@@ -196,11 +266,21 @@ class ReportGenerator:
                     'state': 'Hosts Up',
                     'os': str(insights['hosts_up']),
                     'os_accuracy': '',
+                    'device_type': '',
+                    'fingerprint_confidence': '',
+                    'mac_vendor': '',
+                    'model': '',
+                    'serial_number': '',
+                    'firmware': '',
+                    'manufacturer': '',
                     'port': 'Open Ports',
                     'protocol': str(insights['total_open_ports']),
                     'service': 'Security Issues',
                     'product': str(len(insights['potential_issues'])),
                     'version': '',
+                    'cert_cn': '',
+                    'cert_expiry': '',
+                    'cert_issuer': '',
                     'severity': '',
                     'issue': '',
                     'risk_score': ''
@@ -436,6 +516,38 @@ class ReportGenerator:
             
             report_lines.append(f"\n📍 Host: {ip} ({hostname})")
             
+            # Device Classification
+            if 'device_classification' in host:
+                device_info = host['device_classification']
+                device_icon = {
+                    'router': '🌐', 'switch': '🔀', 'firewall': '🛡️',
+                    'server': '🖥️', 'workstation': '💻', 'printer': '🖨️',
+                    'iot': '📡', 'storage': '💾', 'unknown': '❓'
+                }.get(device_info.get('device_type', 'unknown'), '❓')
+                
+                confidence_pct = int(device_info.get('confidence', 0) * 100)
+                report_lines.append(f"  {device_icon} Device Type: {device_info.get('device_type', 'unknown').title()} ({confidence_pct}% confidence)")
+            
+            # Hardware Information
+            if 'hardware_info' in host and host['hardware_info']:
+                hw_info = host['hardware_info']
+                if hw_info.get('manufacturer') or hw_info.get('model'):
+                    report_lines.append(f"  🏭 Hardware: {hw_info.get('manufacturer', '')} {hw_info.get('model', '')}".strip())
+                if hw_info.get('serial_number'):
+                    report_lines.append(f"  🔢 Serial: {hw_info['serial_number']}")
+                if hw_info.get('firmware'):
+                    report_lines.append(f"  📟 Firmware: {hw_info['firmware']}")
+                if hw_info.get('mac_vendor'):
+                    report_lines.append(f"  🏢 MAC Vendor: {hw_info['mac_vendor']}")
+                
+                # Certificate warnings
+                if 'certificates' in hw_info:
+                    for cert in hw_info['certificates']:
+                        if cert.get('expired'):
+                            report_lines.append(f"  🔴 EXPIRED Certificate on port {cert['port']}: {cert['common_name']}")
+                        elif cert.get('expiring_soon'):
+                            report_lines.append(f"  🟡 Certificate expiring in {cert['days_remaining']} days on port {cert['port']}")
+            
             # OS Information with confidence
             if host['os'].get('matches'):
                 best_match = max(host['os']['matches'], key=lambda x: x['accuracy'])
@@ -646,8 +758,28 @@ class ReportGenerator:
         service_stats = Counter()
         port_stats = Counter()
         os_stats = Counter(insights['os_distribution'])
+        device_type_stats = Counter()
+        expiring_certs = []
         
         for host in self.data['hosts']:
+            # Count device types
+            if 'device_classification' in host:
+                device_type = host['device_classification'].get('device_type', 'unknown')
+                device_type_stats[device_type] += 1
+            
+            # Check for expiring certificates
+            if 'hardware_info' in host and 'certificates' in host['hardware_info']:
+                ip = host['addresses'].get('ipv4', 'unknown')
+                for cert in host['hardware_info']['certificates']:
+                    if cert.get('expiring_soon') or cert.get('expired'):
+                        expiring_certs.append({
+                            'host': ip,
+                            'port': cert['port'],
+                            'common_name': cert.get('common_name', ''),
+                            'days_remaining': cert.get('days_remaining', 0),
+                            'expired': cert.get('expired', False)
+                        })
+            
             for port in host['ports']:
                 if port['state'] == 'open':
                     service_stats[port['service'].get('name', 'unknown')] += 1
@@ -672,6 +804,8 @@ class ReportGenerator:
             'service_stats': service_stats.most_common(10),
             'port_stats': port_stats.most_common(10),
             'os_stats': os_stats.most_common(),
+            'device_type_stats': device_type_stats.most_common(),
+            'expiring_certs': sorted(expiring_certs, key=lambda x: x['days_remaining']),
             'severity_counts': dict(severity_counts),
             'total_issues': len(insights['potential_issues']),
             'risk_score': risk_score,
@@ -1049,6 +1183,32 @@ class ReportGenerator:
             font-weight: 500;
         }
 
+        .hardware-info {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .hardware-info strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+
+        .hardware-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .hardware-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .port-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1334,6 +1494,25 @@ class ReportGenerator:
                     </div>
                 </div>
 
+                {% if device_type_stats %}
+                <div class="chart-container" style="margin-top: 30px;">
+                    <h4>Device Types</h4>
+                    {% for device_type, count in device_type_stats %}
+                    <div class="chart-bar">
+                        <div class="chart-label">
+                            <span>{{ device_type|title }}</span>
+                            <span>{{ count }} devices</span>
+                        </div>
+                        <div class="chart-progress">
+                            <div class="chart-fill" style="width: {{ (count / insights.hosts_up * 100) if insights.hosts_up > 0 else 0 }}%">
+                                {{ ((count / insights.hosts_up * 100) | round(1)) if insights.hosts_up > 0 else 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 {% if os_stats %}
                 <div class="chart-container" style="margin-top: 30px;">
                     <h4>Operating Systems</h4>
@@ -1354,6 +1533,29 @@ class ReportGenerator:
                 {% endif %}
             </div>
 
+            <!-- Certificate Warnings -->
+            {% if expiring_certs %}
+            <div class="section">
+                <div class="section-title">🔐 Certificate Status</div>
+                {% for cert in expiring_certs %}
+                <div class="alert {% if cert.expired %}alert-high{% else %}alert-medium{% endif %}">
+                    <div class="alert-icon">
+                        {% if cert.expired %}🔴{% else %}🟡{% endif %}
+                    </div>
+                    <div class="alert-content">
+                        <strong>{{ cert.host }}:{{ cert.port }}</strong> - 
+                        {% if cert.expired %}
+                            Certificate EXPIRED {{ -cert.days_remaining }} days ago
+                        {% else %}
+                            Certificate expiring in {{ cert.days_remaining }} days
+                        {% endif %}
+                        <br><small>CN: {{ cert.common_name }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Host Details -->
             <div class="section">
                 <div class="section-title">🖥️ Host Details</div>
@@ -1366,13 +1568,54 @@ class ReportGenerator:
                                 ({{ host.hostnames[0].name }})
                             {% endif %}
                         </span>
-                        {% if host.os.matches %}
-                            {% set best_os = host.os.matches|max(attribute='accuracy') %}
-                            {% if best_os.accuracy > 70 %}
-                            <span class="host-badge">{{ best_os.name }}</span>
+                        <div style="display: flex; gap: 10px;">
+                            {% if host.device_classification %}
+                                {% set device_type = host.device_classification.device_type %}
+                                {% set confidence = (host.device_classification.confidence * 100)|round|int %}
+                                <span class="host-badge" style="background: #667eea;">
+                                    {% if device_type == 'router' %}🌐
+                                    {% elif device_type == 'switch' %}🔀
+                                    {% elif device_type == 'firewall' %}🛡️
+                                    {% elif device_type == 'server' %}🖥️
+                                    {% elif device_type == 'workstation' %}💻
+                                    {% elif device_type == 'printer' %}🖨️
+                                    {% elif device_type == 'iot' %}📡
+                                    {% elif device_type == 'storage' %}💾
+                                    {% else %}❓{% endif %}
+                                    {{ device_type|title }} ({{ confidence }}%)
+                                </span>
                             {% endif %}
-                        {% endif %}
+                            {% if host.os.matches %}
+                                {% set best_os = host.os.matches|max(attribute='accuracy') %}
+                                {% if best_os.accuracy > 70 %}
+                                <span class="host-badge">{{ best_os.name }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
+
+                    {% if host.hardware_info %}
+                    <div class="hardware-info">
+                        <strong>Hardware Information:</strong>
+                        <div class="hardware-info-grid">
+                            {% if host.hardware_info.manufacturer or host.hardware_info.model %}
+                            <div class="hardware-item">🏭 <strong>Model:</strong> {{ host.hardware_info.manufacturer|default('', true) }} {{ host.hardware_info.model|default('', true) }}</div>
+                            {% endif %}
+                            {% if host.hardware_info.serial_number %}
+                            <div class="hardware-item">🔢 <strong>Serial:</strong> {{ host.hardware_info.serial_number }}</div>
+                            {% endif %}
+                            {% if host.hardware_info.firmware %}
+                            <div class="hardware-item">📟 <strong>Firmware:</strong> {{ host.hardware_info.firmware }}</div>
+                            {% endif %}
+                            {% if host.hardware_info.mac_vendor %}
+                            <div class="hardware-item">🏢 <strong>MAC Vendor:</strong> {{ host.hardware_info.mac_vendor }}</div>
+                            {% endif %}
+                            {% if host.hardware_info.uptime %}
+                            <div class="hardware-item">⏱️ <strong>Uptime:</strong> {{ host.hardware_info.uptime }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
 
                     {% set open_ports = host.ports|selectattr('state', 'equalto', 'open')|list %}
                     {% if open_ports %}
