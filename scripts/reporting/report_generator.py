@@ -18,21 +18,22 @@ import csv
 from collections import Counter
 import time
 import threading
+from typing import Dict, List, Any
 
 class ReportGenerator:
     def __init__(self, json_file=None):
         self.data = None
         self.template_dir = Path("templates")
         self.template_dir.mkdir(exist_ok=True)
-        
+
         # If json_file provided in constructor, load it
         if json_file:
             self.load_data(json_file)
-        
+
     def load_data(self, json_file):
         """Load parsed nmap data from JSON file"""
         try:
-            with open(json_file, 'r') as f:
+            with open(json_file, "r") as f:
                 self.data = json.load(f)
             return True
         except FileNotFoundError:
@@ -41,353 +42,436 @@ class ReportGenerator:
         except json.JSONDecodeError as e:
             print(f"❌ Error parsing JSON: {e}")
             return False
-    
+
     def generate_reports(self, report_format, timestamp, no_open=False):
         """Generate reports in specified format(s)"""
         if not self.data:
             print("❌ No data loaded")
             return []
-        
+
         generated_files = []
-        
+
         # Create base output directory
         base_output_dir = Path("output/reports")
         base_output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Create subdirectories for each file type
         html_dir = base_output_dir / "html"
         csv_dir = base_output_dir / "csv"
         json_dir = base_output_dir / "json"
-        
+
         html_dir.mkdir(parents=True, exist_ok=True)
         csv_dir.mkdir(parents=True, exist_ok=True)
         json_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Get base filename from scan data
-        scan_type = self.data.get('scan_metadata', {}).get('scan_type', 'scan')
+        scan_type = self.data.get("scan_metadata", {}).get("scan_type", "scan")
         base_filename = f"scan_{scan_type}_report_{timestamp}"
-        
+
         # Generate reports based on format
-        if report_format in ['html', 'all']:
+        if report_format in ["html", "all"]:
             html_file = html_dir / f"{base_filename}.html"
             if self.generate_html_report(html_file, auto_open=(not no_open)):
                 generated_files.append(str(html_file))
-        
-        if report_format in ['text', 'all']:
-            text_file = csv_dir / f"{base_filename}.txt"  # Text files go to csv directory
+
+        if report_format in ["text", "all"]:
+            text_file = (
+                csv_dir / f"{base_filename}.txt"
+            )  # Text files go to csv directory
             if self.generate_text_report(text_file):
                 generated_files.append(str(text_file))
-        
-        if report_format in ['csv', 'all']:
+
+        if report_format in ["csv", "all"]:
             csv_file = csv_dir / f"{base_filename}.csv"
             if self.generate_csv_report(csv_file):
                 generated_files.append(str(csv_file))
-        
+
         return generated_files
-    
+
     def generate_csv_report(self, output_file):
         """Generate CSV report with scan results"""
         if not self.data:
             print("❌ No data loaded")
             return False
-        
+
         try:
-            with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+            with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
                 # Define CSV fields (expanded with hardware inventory)
                 fieldnames = [
-                    'ip_address', 'hostname', 'state', 'os', 'os_accuracy',
-                    'device_type', 'fingerprint_confidence', 'mac_vendor',
-                    'model', 'serial_number', 'firmware', 'manufacturer',
-                    'port', 'protocol', 'service', 'product', 'version',
-                    'cert_cn', 'cert_expiry', 'cert_issuer',
-                    'severity', 'issue', 'risk_score'
+                    "ip_address",
+                    "hostname",
+                    "state",
+                    "os",
+                    "os_accuracy",
+                    "device_type",
+                    "fingerprint_confidence",
+                    "mac_vendor",
+                    "model",
+                    "serial_number",
+                    "firmware",
+                    "manufacturer",
+                    "port",
+                    "protocol",
+                    "service",
+                    "product",
+                    "version",
+                    "cert_cn",
+                    "cert_expiry",
+                    "cert_issuer",
+                    "severity",
+                    "issue",
+                    "risk_score",
                 ]
-                
+
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
-                
+
                 # Process each host
-                for host in self.data['hosts']:
-                    ip = host['addresses'].get('ipv4', host['addresses'].get('ipv6', 'unknown'))
-                    hostname = host['hostnames'][0]['name'] if host['hostnames'] else ''
-                    state = host.get('state', 'up')
-                    
+                for host in self.data["hosts"]:
+                    ip = host["addresses"].get(
+                        "ipv4", host["addresses"].get("ipv6", "unknown")
+                    )
+                    hostname = host["hostnames"][0]["name"] if host["hostnames"] else ""
+                    state = host.get("state", "up")
+
                     # Get OS info
-                    os_name = ''
+                    os_name = ""
                     os_accuracy = 0
-                    if host['os'].get('matches'):
-                        best_os = max(host['os']['matches'], key=lambda x: x['accuracy'])
-                        os_name = best_os['name']
-                        os_accuracy = best_os['accuracy']
-                    
+                    if host["os"].get("matches"):
+                        best_os = max(
+                            host["os"]["matches"], key=lambda x: x["accuracy"]
+                        )
+                        os_name = best_os["name"]
+                        os_accuracy = best_os["accuracy"]
+
                     # Get device classification
-                    device_type = ''
+                    device_type = ""
                     fingerprint_confidence = 0
-                    if 'device_classification' in host:
-                        device_type = host['device_classification'].get('device_type', '')
-                        fingerprint_confidence = host['device_classification'].get('confidence', 0)
-                    
+                    if "device_classification" in host:
+                        device_type = host["device_classification"].get(
+                            "device_type", ""
+                        )
+                        fingerprint_confidence = host["device_classification"].get(
+                            "confidence", 0
+                        )
+
                     # Get hardware info
-                    hardware_info = host.get('hardware_info', {})
-                    mac_vendor = hardware_info.get('mac_vendor', '')
-                    model = hardware_info.get('model', hardware_info.get('printer_model', ''))
-                    serial = hardware_info.get('serial_number', hardware_info.get('printer_serial', ''))
-                    firmware = hardware_info.get('firmware', '')
-                    manufacturer = hardware_info.get('manufacturer', hardware_info.get('vendor', ''))
-                    
+                    hardware_info = host.get("hardware_info", {})
+                    mac_vendor = hardware_info.get("mac_vendor", "")
+                    model = hardware_info.get(
+                        "model", hardware_info.get("printer_model", "")
+                    )
+                    serial = hardware_info.get(
+                        "serial_number", hardware_info.get("printer_serial", "")
+                    )
+                    firmware = hardware_info.get("firmware", "")
+                    manufacturer = hardware_info.get(
+                        "manufacturer", hardware_info.get("vendor", "")
+                    )
+
                     # Get certificate info
-                    cert_cn = ''
-                    cert_expiry = ''
-                    cert_issuer = ''
-                    if 'certificates' in hardware_info:
-                        for cert in hardware_info['certificates']:
-                            if cert.get('port') == 443:  # Primary HTTPS cert
-                                cert_cn = cert.get('common_name', '')
-                                cert_expiry = cert.get('not_after', '')
-                                cert_issuer = cert.get('issuer', '')
+                    cert_cn = ""
+                    cert_expiry = ""
+                    cert_issuer = ""
+                    if "certificates" in hardware_info:
+                        for cert in hardware_info["certificates"]:
+                            if cert.get("port") == 443:  # Primary HTTPS cert
+                                cert_cn = cert.get("common_name", "")
+                                cert_expiry = cert.get("not_after", "")
+                                cert_issuer = cert.get("issuer", "")
                                 break
-                    
+
                     # Get open ports
-                    open_ports = [p for p in host['ports'] if p['state'] == 'open']
-                    
+                    open_ports = [p for p in host["ports"] if p["state"] == "open"]
+
                     if open_ports:
                         # Write one row per port
                         for port in open_ports:
                             # Find any security issues for this port
                             issues = []
-                            for issue in self.data['insights']['potential_issues']:
-                                if issue['host'] == ip and issue['port'] == port['port']:
+                            for issue in self.data["insights"]["potential_issues"]:
+                                if (
+                                    issue["host"] == ip
+                                    and issue["port"] == port["port"]
+                                ):
                                     issues.append(issue)
-                            
+
                             if issues:
                                 # Write one row per issue
                                 for issue in issues:
-                                    writer.writerow({
-                                        'ip_address': ip,
-                                        'hostname': hostname,
-                                        'state': state,
-                                        'os': os_name,
-                                        'os_accuracy': os_accuracy,
-                                        'device_type': device_type,
-                                        'fingerprint_confidence': fingerprint_confidence,
-                                        'mac_vendor': mac_vendor,
-                                        'model': model,
-                                        'serial_number': serial,
-                                        'firmware': firmware,
-                                        'manufacturer': manufacturer,
-                                        'port': port['port'],
-                                        'protocol': port['protocol'],
-                                        'service': port['service'].get('name', 'unknown'),
-                                        'product': port['service'].get('product', ''),
-                                        'version': port['service'].get('version', ''),
-                                        'cert_cn': cert_cn if port['port'] in [443, 8443] else '',
-                                        'cert_expiry': cert_expiry if port['port'] in [443, 8443] else '',
-                                        'cert_issuer': cert_issuer if port['port'] in [443, 8443] else '',
-                                        'severity': issue['severity'],
-                                        'issue': issue['issue'],
-                                        'risk_score': self._calculate_port_risk_score(port, issue)
-                                    })
+                                    writer.writerow(
+                                        {
+                                            "ip_address": ip,
+                                            "hostname": hostname,
+                                            "state": state,
+                                            "os": os_name,
+                                            "os_accuracy": os_accuracy,
+                                            "device_type": device_type,
+                                            "fingerprint_confidence": fingerprint_confidence,
+                                            "mac_vendor": mac_vendor,
+                                            "model": model,
+                                            "serial_number": serial,
+                                            "firmware": firmware,
+                                            "manufacturer": manufacturer,
+                                            "port": port["port"],
+                                            "protocol": port["protocol"],
+                                            "service": port["service"].get(
+                                                "name", "unknown"
+                                            ),
+                                            "product": port["service"].get(
+                                                "product", ""
+                                            ),
+                                            "version": port["service"].get(
+                                                "version", ""
+                                            ),
+                                            "cert_cn": (
+                                                cert_cn
+                                                if port["port"] in [443, 8443]
+                                                else ""
+                                            ),
+                                            "cert_expiry": (
+                                                cert_expiry
+                                                if port["port"] in [443, 8443]
+                                                else ""
+                                            ),
+                                            "cert_issuer": (
+                                                cert_issuer
+                                                if port["port"] in [443, 8443]
+                                                else ""
+                                            ),
+                                            "severity": issue["severity"],
+                                            "issue": issue["issue"],
+                                            "risk_score": self._calculate_port_risk_score(
+                                                port, issue
+                                            ),
+                                        }
+                                    )
                             else:
                                 # No issues for this port
-                                writer.writerow({
-                                    'ip_address': ip,
-                                    'hostname': hostname,
-                                    'state': state,
-                                    'os': os_name,
-                                    'os_accuracy': os_accuracy,
-                                    'device_type': device_type,
-                                    'fingerprint_confidence': fingerprint_confidence,
-                                    'mac_vendor': mac_vendor,
-                                    'model': model,
-                                    'serial_number': serial,
-                                    'firmware': firmware,
-                                    'manufacturer': manufacturer,
-                                    'port': port['port'],
-                                    'protocol': port['protocol'],
-                                    'service': port['service'].get('name', 'unknown'),
-                                    'product': port['service'].get('product', ''),
-                                    'version': port['service'].get('version', ''),
-                                    'cert_cn': cert_cn if port['port'] in [443, 8443] else '',
-                                    'cert_expiry': cert_expiry if port['port'] in [443, 8443] else '',
-                                    'cert_issuer': cert_issuer if port['port'] in [443, 8443] else '',
-                                    'severity': '',
-                                    'issue': '',
-                                    'risk_score': self._calculate_port_risk_score(port, None)
-                                })
+                                writer.writerow(
+                                    {
+                                        "ip_address": ip,
+                                        "hostname": hostname,
+                                        "state": state,
+                                        "os": os_name,
+                                        "os_accuracy": os_accuracy,
+                                        "device_type": device_type,
+                                        "fingerprint_confidence": fingerprint_confidence,
+                                        "mac_vendor": mac_vendor,
+                                        "model": model,
+                                        "serial_number": serial,
+                                        "firmware": firmware,
+                                        "manufacturer": manufacturer,
+                                        "port": port["port"],
+                                        "protocol": port["protocol"],
+                                        "service": port["service"].get(
+                                            "name", "unknown"
+                                        ),
+                                        "product": port["service"].get("product", ""),
+                                        "version": port["service"].get("version", ""),
+                                        "cert_cn": (
+                                            cert_cn
+                                            if port["port"] in [443, 8443]
+                                            else ""
+                                        ),
+                                        "cert_expiry": (
+                                            cert_expiry
+                                            if port["port"] in [443, 8443]
+                                            else ""
+                                        ),
+                                        "cert_issuer": (
+                                            cert_issuer
+                                            if port["port"] in [443, 8443]
+                                            else ""
+                                        ),
+                                        "severity": "",
+                                        "issue": "",
+                                        "risk_score": self._calculate_port_risk_score(
+                                            port, None
+                                        ),
+                                    }
+                                )
                     else:
                         # Host with no open ports
-                        writer.writerow({
-                            'ip_address': ip,
-                            'hostname': hostname,
-                            'state': state,
-                            'os': os_name,
-                            'os_accuracy': os_accuracy,
-                            'device_type': device_type,
-                            'fingerprint_confidence': fingerprint_confidence,
-                            'mac_vendor': mac_vendor,
-                            'model': model,
-                            'serial_number': serial,
-                            'firmware': firmware,
-                            'manufacturer': manufacturer,
-                            'port': '',
-                            'protocol': '',
-                            'service': '',
-                            'product': '',
-                            'version': '',
-                            'cert_cn': '',
-                            'cert_expiry': '',
-                            'cert_issuer': '',
-                            'severity': '',
-                            'issue': '',
-                            'risk_score': 0
-                        })
-                
+                        writer.writerow(
+                            {
+                                "ip_address": ip,
+                                "hostname": hostname,
+                                "state": state,
+                                "os": os_name,
+                                "os_accuracy": os_accuracy,
+                                "device_type": device_type,
+                                "fingerprint_confidence": fingerprint_confidence,
+                                "mac_vendor": mac_vendor,
+                                "model": model,
+                                "serial_number": serial,
+                                "firmware": firmware,
+                                "manufacturer": manufacturer,
+                                "port": "",
+                                "protocol": "",
+                                "service": "",
+                                "product": "",
+                                "version": "",
+                                "cert_cn": "",
+                                "cert_expiry": "",
+                                "cert_issuer": "",
+                                "severity": "",
+                                "issue": "",
+                                "risk_score": 0,
+                            }
+                        )
+
                 # Add summary rows at the end
                 writer.writerow({})  # Empty row
-                writer.writerow({
-                    'ip_address': 'SUMMARY',
-                    'hostname': f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                    'state': '',
-                    'os': '',
-                    'os_accuracy': '',
-                    'device_type': '',
-                    'fingerprint_confidence': '',
-                    'mac_vendor': '',
-                    'model': '',
-                    'serial_number': '',
-                    'firmware': '',
-                    'manufacturer': '',
-                    'port': '',
-                    'protocol': '',
-                    'service': '',
-                    'product': '',
-                    'version': '',
-                    'cert_cn': '',
-                    'cert_expiry': '',
-                    'cert_issuer': '',
-                    'severity': '',
-                    'issue': '',
-                    'risk_score': ''
-                })
-                
-                insights = self.data['insights']
-                writer.writerow({
-                    'ip_address': 'Total Hosts',
-                    'hostname': str(insights['total_hosts']),
-                    'state': 'Hosts Up',
-                    'os': str(insights['hosts_up']),
-                    'os_accuracy': '',
-                    'device_type': '',
-                    'fingerprint_confidence': '',
-                    'mac_vendor': '',
-                    'model': '',
-                    'serial_number': '',
-                    'firmware': '',
-                    'manufacturer': '',
-                    'port': 'Open Ports',
-                    'protocol': str(insights['total_open_ports']),
-                    'service': 'Security Issues',
-                    'product': str(len(insights['potential_issues'])),
-                    'version': '',
-                    'cert_cn': '',
-                    'cert_expiry': '',
-                    'cert_issuer': '',
-                    'severity': '',
-                    'issue': '',
-                    'risk_score': ''
-                })
-            
+                writer.writerow(
+                    {
+                        "ip_address": "SUMMARY",
+                        "hostname": f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                        "state": "",
+                        "os": "",
+                        "os_accuracy": "",
+                        "device_type": "",
+                        "fingerprint_confidence": "",
+                        "mac_vendor": "",
+                        "model": "",
+                        "serial_number": "",
+                        "firmware": "",
+                        "manufacturer": "",
+                        "port": "",
+                        "protocol": "",
+                        "service": "",
+                        "product": "",
+                        "version": "",
+                        "cert_cn": "",
+                        "cert_expiry": "",
+                        "cert_issuer": "",
+                        "severity": "",
+                        "issue": "",
+                        "risk_score": "",
+                    }
+                )
+
+                insights = self.data["insights"]
+                writer.writerow(
+                    {
+                        "ip_address": "Total Hosts",
+                        "hostname": str(insights["total_hosts"]),
+                        "state": "Hosts Up",
+                        "os": str(insights["hosts_up"]),
+                        "os_accuracy": "",
+                        "device_type": "",
+                        "fingerprint_confidence": "",
+                        "mac_vendor": "",
+                        "model": "",
+                        "serial_number": "",
+                        "firmware": "",
+                        "manufacturer": "",
+                        "port": "Open Ports",
+                        "protocol": str(insights["total_open_ports"]),
+                        "service": "Security Issues",
+                        "product": str(len(insights["potential_issues"])),
+                        "version": "",
+                        "cert_cn": "",
+                        "cert_expiry": "",
+                        "cert_issuer": "",
+                        "severity": "",
+                        "issue": "",
+                        "risk_score": "",
+                    }
+                )
+
             print(f"✅ CSV report generated: {output_file}")
             return True
-            
+
         except Exception as e:
             print(f"❌ Error generating CSV report: {e}")
             return False
-    
+
     def _calculate_port_risk_score(self, port, issue=None):
         """Calculate risk score for a port/service"""
         score = 0
-        
+
         # Base score by port number
         risky_ports = {
-            21: 30,    # FTP
-            22: 5,     # SSH (low risk if properly secured)
-            23: 50,    # Telnet
-            25: 20,    # SMTP
-            53: 10,    # DNS
-            80: 15,    # HTTP
-            110: 20,   # POP3
-            111: 25,   # RPC
-            135: 30,   # Windows RPC
-            139: 30,   # NetBIOS
-            143: 20,   # IMAP
-            443: 5,    # HTTPS (low risk)
-            445: 35,   # SMB
+            21: 30,  # FTP
+            22: 5,  # SSH (low risk if properly secured)
+            23: 50,  # Telnet
+            25: 20,  # SMTP
+            53: 10,  # DNS
+            80: 15,  # HTTP
+            110: 20,  # POP3
+            111: 25,  # RPC
+            135: 30,  # Windows RPC
+            139: 30,  # NetBIOS
+            143: 20,  # IMAP
+            443: 5,  # HTTPS (low risk)
+            445: 35,  # SMB
             1433: 40,  # MSSQL
             3306: 40,  # MySQL
             3389: 30,  # RDP
             5432: 40,  # PostgreSQL
             5900: 35,  # VNC
             8080: 15,  # HTTP Alt
-            8443: 5,   # HTTPS Alt
+            8443: 5,  # HTTPS Alt
         }
-        
-        score += risky_ports.get(port['port'], 10)
-        
+
+        score += risky_ports.get(port["port"], 10)
+
         # Adjust by service
-        service_name = port['service'].get('name', '').lower()
-        if 'telnet' in service_name:
+        service_name = port["service"].get("name", "").lower()
+        if "telnet" in service_name:
             score += 40
-        elif 'ftp' in service_name:
+        elif "ftp" in service_name:
             score += 20
-        elif 'vnc' in service_name:
+        elif "vnc" in service_name:
             score += 30
-        elif 'smb' in service_name or 'netbios' in service_name:
+        elif "smb" in service_name or "netbios" in service_name:
             score += 20
-        elif 'http' in service_name and 'https' not in service_name:
+        elif "http" in service_name and "https" not in service_name:
             score += 10
-        
+
         # Add issue severity if present
         if issue:
-            if issue['severity'] == 'high':
+            if issue["severity"] == "high":
                 score += 50
-            elif issue['severity'] == 'medium':
+            elif issue["severity"] == "medium":
                 score += 25
-        
+
         # Cap at 100
         return min(score, 100)
-    
+
     def open_report(self, filepath):
         """Cross-platform method to open HTML report in default browser with error suppression"""
         file_url = filepath.absolute().as_uri()
-        
+
         # Always display the clickable link first
         print(f"\n✨ HTML Report Ready!")
         print(f"📎 Click here to open: {file_url}")
         print(f"   (Ctrl+Click or Cmd+Click in most terminals)")
-        
+
         try:
             # Create subprocess kwargs to suppress stderr
             kwargs = {}
-            if platform.system() != 'Windows':
+            if platform.system() != "Windows":
                 # On Unix-like systems, redirect stderr to devnull
-                kwargs['stderr'] = subprocess.DEVNULL
-                kwargs['stdout'] = subprocess.DEVNULL
-            
-            if platform.system() == 'Darwin':       # macOS
-                subprocess.call(['open', file_url], **kwargs)
-            elif platform.system() == 'Windows':    # Windows
+                kwargs["stderr"] = subprocess.DEVNULL
+                kwargs["stdout"] = subprocess.DEVNULL
+
+            if platform.system() == "Darwin":  # macOS
+                subprocess.call(["open", file_url], **kwargs)
+            elif platform.system() == "Windows":  # Windows
                 os.startfile(str(filepath))
-            else:                                   # Linux/Unix
+            else:  # Linux/Unix
                 # Try multiple methods for better compatibility
                 try:
-                    subprocess.call(['xdg-open', file_url], **kwargs)
+                    subprocess.call(["xdg-open", file_url], **kwargs)
                 except:
                     # Fallback to webbrowser module (also suppress output)
                     import contextlib
+
                     with contextlib.redirect_stderr(None):
                         webbrowser.open(file_url)
-            
+
             print(f"🌐 Report opened in browser: {filepath.name}")
             return True
         except Exception as e:
@@ -395,33 +479,33 @@ class ReportGenerator:
             print(f"⚠️  Could not auto-open report")
             print(f"💡 Please click the link above to open the report manually")
             return False
-    
+
     def generate_html_report(self, output_file, auto_open=True):
         """Generate comprehensive HTML report with enhanced features"""
         if not self.data:
             print("❌ No data loaded")
             return False
-        
+
         # Create enhanced HTML template
         html_template = self._get_enhanced_html_template()
-        
+
         # Prepare data for template
         template_data = self._prepare_template_data()
-        
+
         # Add scan metadata for quick rescan
-        template_data['scan_metadata'] = self._extract_scan_metadata()
-        
+        template_data["scan_metadata"] = self._extract_scan_metadata()
+
         # Render template
         template = Template(html_template)
         html_content = template.render(**template_data)
-        
+
         # Write to file
         output_path = Path(output_file)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
-        
+
         print(f"✅ HTML report generated: {output_file}")
-        
+
         # Auto-open report if requested
         if auto_open:
             time.sleep(0.5)  # Small delay to ensure file is written
@@ -431,40 +515,48 @@ class ReportGenerator:
             file_url = output_path.absolute().as_uri()
             print(f"\n📎 View report: {file_url}")
             print(f"   (Ctrl+Click or Cmd+Click in most terminals)")
-        
+
         return True
-    
+
     def generate_text_report(self, output_file):
         """Generate enhanced text report with progress indicators"""
         if not self.data:
             print("❌ No data loaded")
             return False
-        
+
         # Show progress for large datasets
-        total_hosts = len(self.data['hosts'])
-        
+        total_hosts = len(self.data["hosts"])
+
         report_lines = []
         report_lines.append("═" * 80)
         report_lines.append("NETWORK SECURITY ANALYSIS REPORT")
         report_lines.append("═" * 80)
-        report_lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        report_lines.append(
+            f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         report_lines.append(f"Scanner: {self.data['scan_info'].get('scanner', 'nmap')}")
-        report_lines.append(f"Command: {self.data['scan_info'].get('command_line', 'N/A')}")
+        report_lines.append(
+            f"Command: {self.data['scan_info'].get('command_line', 'N/A')}"
+        )
         report_lines.append("")
-        
+
         # Executive Summary with visual indicators
-        insights = self.data['insights']
+        insights = self.data["insights"]
         report_lines.append("📊 EXECUTIVE SUMMARY")
         report_lines.append("─" * 30)
         report_lines.append(f"🖥️  Total Hosts Scanned: {insights['total_hosts']}")
         report_lines.append(f"✅ Hosts Online: {insights['hosts_up']}")
         report_lines.append(f"🔓 Total Open Ports: {insights['total_open_ports']}")
         report_lines.append(f"⚙️  Unique Services: {len(insights['unique_services'])}")
-        
+
         # Security summary with severity indicators
-        high_issues = sum(1 for i in insights['potential_issues'] if i['severity'] == 'high')
-        med_issues = sum(1 for i in insights['potential_issues'] if i['severity'] == 'medium')
-        
+        high_issues = sum(
+            1 for i in insights["potential_issues"] if i["severity"] == "high"
+        )
+        med_issues = sum(
+            1 for i in insights["potential_issues"] if i["severity"] == "medium"
+        )
+
         if high_issues > 0:
             report_lines.append(f"🔴 Critical Security Issues: {high_issues}")
         if med_issues > 0:
@@ -472,181 +564,207 @@ class ReportGenerator:
         if high_issues == 0 and med_issues == 0:
             report_lines.append("🟢 No major security issues detected")
         report_lines.append("")
-        
+
         # Security Issues with categorization
-        if insights['potential_issues']:
+        if insights["potential_issues"]:
             report_lines.append("🔒 SECURITY ANALYSIS")
             report_lines.append("─" * 30)
-            
+
             # Group issues by category
-            issues_by_category = self._categorize_security_issues(insights['potential_issues'])
-            
+            issues_by_category = self._categorize_security_issues(
+                insights["potential_issues"]
+            )
+
             for category, issues in issues_by_category.items():
                 report_lines.append(f"\n▶ {category} ({len(issues)} issues)")
                 for issue in issues:
-                    severity_icon = "🔴" if issue['severity'] == 'high' else "🟡"
-                    report_lines.append(f"  {severity_icon} {issue['host']}:{issue['port']} - {issue['issue']}")
+                    severity_icon = "🔴" if issue["severity"] == "high" else "🟡"
+                    report_lines.append(
+                        f"  {severity_icon} {issue['host']}:{issue['port']} - {issue['issue']}"
+                    )
             report_lines.append("")
-        
+
         # Service Distribution with ASCII chart
-        if insights['unique_services']:
+        if insights["unique_services"]:
             report_lines.append("📡 SERVICE DISTRIBUTION")
             report_lines.append("─" * 30)
             service_count = Counter()
-            for host in self.data['hosts']:
-                for port in host['ports']:
-                    if port['state'] == 'open':
-                        service_count[port['service'].get('name', 'unknown')] += 1
-            
+            for host in self.data["hosts"]:
+                for port in host["ports"]:
+                    if port["state"] == "open":
+                        service_count[port["service"].get("name", "unknown")] += 1
+
             max_count = max(service_count.values()) if service_count else 1
             for service, count in service_count.most_common():
                 bar_length = int((count / max_count) * 30)
                 bar = "█" * bar_length
                 report_lines.append(f"{service:15s} {bar} {count}")
             report_lines.append("")
-        
+
         # OS Distribution
-        if insights['os_distribution']:
+        if insights["os_distribution"]:
             report_lines.append("💻 OPERATING SYSTEMS")
             report_lines.append("─" * 30)
-            for os_name, count in insights['os_distribution'].items():
+            for os_name, count in insights["os_distribution"].items():
                 report_lines.append(f"  • {os_name}: {count} hosts")
             report_lines.append("")
-        
+
         # Host Details with progress indicator
         report_lines.append("🖥️  HOST DETAILS")
         report_lines.append("─" * 30)
-        
-        for i, host in enumerate(self.data['hosts'], 1):
+
+        for i, host in enumerate(self.data["hosts"], 1):
             # Show progress for large scans
             if total_hosts > 10 and i % 5 == 0:
-                print(f"  Processing host {i}/{total_hosts}...", end='\r')
-            
-            ip = host['addresses'].get('ipv4', host['addresses'].get('ipv6', 'unknown'))
-            hostname = host['hostnames'][0]['name'] if host['hostnames'] else 'No hostname'
-            
+                print(f"  Processing host {i}/{total_hosts}...", end="\r")
+
+            ip = host["addresses"].get("ipv4", host["addresses"].get("ipv6", "unknown"))
+            hostname = (
+                host["hostnames"][0]["name"] if host["hostnames"] else "No hostname"
+            )
+
             report_lines.append(f"\n📍 Host: {ip} ({hostname})")
-            
+
             # Device Classification
-            if 'device_classification' in host:
-                device_info = host['device_classification']
+            if "device_classification" in host:
+                device_info = host["device_classification"]
                 device_icon = {
-                    'router': '🌐', 'switch': '🔀', 'firewall': '🛡️',
-                    'server': '🖥️', 'workstation': '💻', 'printer': '🖨️',
-                    'iot': '📡', 'storage': '💾', 'unknown': '❓'
-                }.get(device_info.get('device_type', 'unknown'), '❓')
-                
-                confidence_pct = int(device_info.get('confidence', 0) * 100)
-                report_lines.append(f"  {device_icon} Device Type: {device_info.get('device_type', 'unknown').title()} ({confidence_pct}% confidence)")
-            
+                    "router": "🌐",
+                    "switch": "🔀",
+                    "firewall": "🛡️",
+                    "server": "🖥️",
+                    "workstation": "💻",
+                    "printer": "🖨️",
+                    "iot": "📡",
+                    "storage": "💾",
+                    "unknown": "❓",
+                }.get(device_info.get("device_type", "unknown"), "❓")
+
+                confidence_pct = int(device_info.get("confidence", 0) * 100)
+                report_lines.append(
+                    f"  {device_icon} Device Type: {device_info.get('device_type', 'unknown').title()} ({confidence_pct}% confidence)"
+                )
+
             # Hardware Information
-            if 'hardware_info' in host and host['hardware_info']:
-                hw_info = host['hardware_info']
-                if hw_info.get('manufacturer') or hw_info.get('model'):
-                    report_lines.append(f"  🏭 Hardware: {hw_info.get('manufacturer', '')} {hw_info.get('model', '')}".strip())
-                if hw_info.get('serial_number'):
+            if "hardware_info" in host and host["hardware_info"]:
+                hw_info = host["hardware_info"]
+                if hw_info.get("manufacturer") or hw_info.get("model"):
+                    report_lines.append(
+                        f"  🏭 Hardware: {hw_info.get('manufacturer', '')} {hw_info.get('model', '')}".strip()
+                    )
+                if hw_info.get("serial_number"):
                     report_lines.append(f"  🔢 Serial: {hw_info['serial_number']}")
-                if hw_info.get('firmware'):
+                if hw_info.get("firmware"):
                     report_lines.append(f"  📟 Firmware: {hw_info['firmware']}")
-                if hw_info.get('mac_vendor'):
+                if hw_info.get("mac_vendor"):
                     report_lines.append(f"  🏢 MAC Vendor: {hw_info['mac_vendor']}")
-                
+
                 # Certificate warnings
-                if 'certificates' in hw_info:
-                    for cert in hw_info['certificates']:
-                        if cert.get('expired'):
-                            report_lines.append(f"  🔴 EXPIRED Certificate on port {cert['port']}: {cert['common_name']}")
-                        elif cert.get('expiring_soon'):
-                            report_lines.append(f"  🟡 Certificate expiring in {cert['days_remaining']} days on port {cert['port']}")
-            
+                if "certificates" in hw_info:
+                    for cert in hw_info["certificates"]:
+                        if cert.get("expired"):
+                            report_lines.append(
+                                f"  🔴 EXPIRED Certificate on port {cert['port']}: {cert['common_name']}"
+                            )
+                        elif cert.get("expiring_soon"):
+                            report_lines.append(
+                                f"  🟡 Certificate expiring in {cert['days_remaining']} days on port {cert['port']}"
+                            )
+
             # OS Information with confidence
-            if host['os'].get('matches'):
-                best_match = max(host['os']['matches'], key=lambda x: x['accuracy'])
-                if best_match['accuracy'] > 70:
-                    confidence_icon = "🟢" if best_match['accuracy'] > 90 else "🟡"
-                    report_lines.append(f"  {confidence_icon} OS: {best_match['name']} ({best_match['accuracy']}% confidence)")
-            
+            if host["os"].get("matches"):
+                best_match = max(host["os"]["matches"], key=lambda x: x["accuracy"])
+                if best_match["accuracy"] > 70:
+                    confidence_icon = "🟢" if best_match["accuracy"] > 90 else "🟡"
+                    report_lines.append(
+                        f"  {confidence_icon} OS: {best_match['name']} ({best_match['accuracy']}% confidence)"
+                    )
+
             # Open Ports with service details
-            open_ports = [p for p in host['ports'] if p['state'] == 'open']
+            open_ports = [p for p in host["ports"] if p["state"] == "open"]
             if open_ports:
                 report_lines.append(f"  🔓 Open Ports: {len(open_ports)}")
-                
+
                 # Group ports by risk level
                 risky_ports = []
                 normal_ports = []
-                
+
                 for port in open_ports:
                     port_info = self._format_port_info(port)
                     if self._is_risky_port(port):
                         risky_ports.append(("⚠️ ", port_info))
                     else:
                         normal_ports.append(("  ", port_info))
-                
+
                 # Show risky ports first
                 for prefix, info in risky_ports[:5]:
                     report_lines.append(f"    {prefix}{info}")
                 for prefix, info in normal_ports[:5]:
                     report_lines.append(f"    {prefix}{info}")
-                
+
                 if len(open_ports) > 10:
-                    report_lines.append(f"    ... and {len(open_ports) - 10} more ports")
-        
+                    report_lines.append(
+                        f"    ... and {len(open_ports) - 10} more ports"
+                    )
+
         # Clear progress indicator
         if total_hosts > 10:
-            print(" " * 50, end='\r')
-        
+            print(" " * 50, end="\r")
+
         # Summary statistics
         report_lines.append("\n" + "═" * 80)
         report_lines.append("📈 SCAN STATISTICS")
         report_lines.append("─" * 30)
-        scan_time = self.data['scan_info'].get('elapsed_time', 'Unknown')
+        scan_time = self.data["scan_info"].get("elapsed_time", "Unknown")
         report_lines.append(f"⏱️  Scan Duration: {scan_time}")
-        report_lines.append(f"📅 Scan Date: {self.data['scan_info'].get('scan_date', 'Unknown')}")
-        
+        report_lines.append(
+            f"📅 Scan Date: {self.data['scan_info'].get('scan_date', 'Unknown')}"
+        )
+
         # Next steps recommendations
         report_lines.append("\n💡 RECOMMENDED NEXT STEPS")
         report_lines.append("─" * 30)
         recommendations = self._generate_recommendations(insights)
         for i, rec in enumerate(recommendations, 1):
             report_lines.append(f"{i}. {rec}")
-        
+
         # Write to file
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(report_lines))
-        
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(report_lines))
+
         print(f"✅ Text report generated: {output_file}")
         return True
-    
+
     def _extract_scan_metadata(self):
         """Extract scan metadata for quick rescan functionality"""
-        scan_info = self.data.get('scan_info', {})
-        command = scan_info.get('command_line', '')
-        
+        scan_info = self.data.get("scan_info", {})
+        command = scan_info.get("command_line", "")
+
         # Parse scan type from command
-        scan_type = 'comprehensive'
-        if '-F' in command:
-            scan_type = 'quick'
-        elif '-p-' in command:
-            scan_type = 'full_tcp'
-        elif '-sU' in command:
-            scan_type = 'udp_scan'
-        elif '--script=vuln' in command:
-            scan_type = 'vulnerability_scan'
-        elif 'http-*' in command:
-            scan_type = 'web_discovery'
-        elif '*sql*' in command or '*db*' in command:
-            scan_type = 'database_discovery'
-        elif '-sS' in command:
-            scan_type = 'stealth_scan'
-        elif 'everything' in command or 'vuln,http' in command:
-            scan_type = 'everything_with_vuln'
-        
+        scan_type = "comprehensive"
+        if "-F" in command:
+            scan_type = "quick"
+        elif "-p-" in command:
+            scan_type = "full_tcp"
+        elif "-sU" in command:
+            scan_type = "udp_scan"
+        elif "--script=vuln" in command:
+            scan_type = "vulnerability_scan"
+        elif "http-*" in command:
+            scan_type = "web_discovery"
+        elif "*sql*" in command or "*db*" in command:
+            scan_type = "database_discovery"
+        elif "-sS" in command:
+            scan_type = "stealth_scan"
+        elif "everything" in command or "vuln,http" in command:
+            scan_type = "everything_with_vuln"
+
         # Extract target from hosts
         targets = []
-        for host in self.data.get('hosts', []):
-            if 'addresses' in host:
-                targets.append(host['addresses'].get('ipv4', ''))
-        
+        for host in self.data.get("hosts", []):
+            if "addresses" in host:
+                targets.append(host["addresses"].get("ipv4", ""))
+
         # Determine target range
         if targets:
             # Simple logic to determine if it's a range
@@ -657,204 +775,231 @@ class ReportGenerator:
                 target = first_ip
         else:
             target = "unknown"
-        
+
         # Also get from scan_metadata if available
-        if 'scan_metadata' in self.data and 'target' in self.data['scan_metadata']:
-            target = self.data['scan_metadata']['target']
-        if 'scan_metadata' in self.data and 'scan_type' in self.data['scan_metadata']:
-            scan_type = self.data['scan_metadata']['scan_type']
-        
-        return {
-            'scan_type': scan_type,
-            'target': target,
-            'command': command
-        }
-    
+        if "scan_metadata" in self.data and "target" in self.data["scan_metadata"]:
+            target = self.data["scan_metadata"]["target"]
+        if "scan_metadata" in self.data and "scan_type" in self.data["scan_metadata"]:
+            scan_type = self.data["scan_metadata"]["scan_type"]
+
+        return {"scan_type": scan_type, "target": target, "command": command}
+
     def _categorize_security_issues(self, issues):
         """Categorize security issues by type"""
         categories = {
-            'Unencrypted Services': [],
-            'Database Exposure': [],
-            'Remote Access': [],
-            'Network Services': [],
-            'Web Services': [],
-            'Other': []
+            "Unencrypted Services": [],
+            "Database Exposure": [],
+            "Remote Access": [],
+            "Network Services": [],
+            "Web Services": [],
+            "Other": [],
         }
-        
+
         for issue in issues:
             categorized = False
-            issue_text = issue['issue'].lower()
-            
-            if any(x in issue_text for x in ['unencrypted', 'telnet', 'ftp', 'http service']):
-                categories['Unencrypted Services'].append(issue)
+            issue_text = issue["issue"].lower()
+
+            if any(
+                x in issue_text
+                for x in ["unencrypted", "telnet", "ftp", "http service"]
+            ):
+                categories["Unencrypted Services"].append(issue)
                 categorized = True
-            elif any(x in issue_text for x in ['database', 'mysql', 'postgresql', 'mongodb', 'redis']):
-                categories['Database Exposure'].append(issue)
+            elif any(
+                x in issue_text
+                for x in ["database", "mysql", "postgresql", "mongodb", "redis"]
+            ):
+                categories["Database Exposure"].append(issue)
                 categorized = True
-            elif any(x in issue_text for x in ['rdp', 'vnc', 'ssh']):
-                categories['Remote Access'].append(issue)
+            elif any(x in issue_text for x in ["rdp", "vnc", "ssh"]):
+                categories["Remote Access"].append(issue)
                 categorized = True
-            elif any(x in issue_text for x in ['smb', 'netbios', 'snmp']):
-                categories['Network Services'].append(issue)
+            elif any(x in issue_text for x in ["smb", "netbios", "snmp"]):
+                categories["Network Services"].append(issue)
                 categorized = True
-            elif any(x in issue_text for x in ['web', 'http', 'https']):
-                categories['Web Services'].append(issue)
+            elif any(x in issue_text for x in ["web", "http", "https"]):
+                categories["Web Services"].append(issue)
                 categorized = True
-            
+
             if not categorized:
-                categories['Other'].append(issue)
-        
+                categories["Other"].append(issue)
+
         # Remove empty categories
         return {k: v for k, v in categories.items() if v}
-    
+
     def _format_port_info(self, port):
         """Format port information concisely"""
-        service = port['service'].get('name', 'unknown')
-        version = port['service'].get('version', '')
-        product = port['service'].get('product', '')
-        
+        service = port["service"].get("name", "unknown")
+        version = port["service"].get("version", "")
+        product = port["service"].get("product", "")
+
         info = f"{port['port']}/{port['protocol']}: {service}"
         if product:
             info += f" ({product}"
             if version:
                 info += f" {version}"
             info += ")"
-        
+
         return info
-    
+
     def _is_risky_port(self, port):
         """Determine if a port/service combination is risky"""
-        risky_services = ['telnet', 'ftp', 'vnc', 'rdp', 'smb', 'netbios-ssn']
+        risky_services = ["telnet", "ftp", "vnc", "rdp", "smb", "netbios-ssn"]
         risky_ports = [21, 23, 135, 139, 445, 3389, 5900]
-        
-        service_name = port['service'].get('name', '').lower()
-        return (service_name in risky_services or 
-                port['port'] in risky_ports or
-                (port['port'] == 80 and 'http' in service_name))
-    
+
+        service_name = port["service"].get("name", "").lower()
+        return (
+            service_name in risky_services
+            or port["port"] in risky_ports
+            or (port["port"] == 80 and "http" in service_name)
+        )
+
     def _generate_recommendations(self, insights):
         """Generate actionable recommendations based on findings"""
         recommendations = []
-        
+
         # Check for critical issues
-        high_issues = [i for i in insights['potential_issues'] if i['severity'] == 'high']
+        high_issues = [
+            i for i in insights["potential_issues"] if i["severity"] == "high"
+        ]
         if high_issues:
             recommendations.append("🔴 Address critical security issues immediately")
-            
+
             # Specific recommendations based on issue types
-            if any('telnet' in i['issue'].lower() for i in high_issues):
-                recommendations.append("🔒 Replace Telnet with SSH for secure remote access")
-            if any('ftp' in i['issue'].lower() for i in high_issues):
-                recommendations.append("🔒 Replace FTP with SFTP or FTPS for secure file transfer")
-            if any('database' in i['issue'].lower() for i in high_issues):
-                recommendations.append("🛡️ Restrict database access to specific IP addresses")
-        
+            if any("telnet" in i["issue"].lower() for i in high_issues):
+                recommendations.append(
+                    "🔒 Replace Telnet with SSH for secure remote access"
+                )
+            if any("ftp" in i["issue"].lower() for i in high_issues):
+                recommendations.append(
+                    "🔒 Replace FTP with SFTP or FTPS for secure file transfer"
+                )
+            if any("database" in i["issue"].lower() for i in high_issues):
+                recommendations.append(
+                    "🛡️ Restrict database access to specific IP addresses"
+                )
+
         # General recommendations
-        if insights['total_open_ports'] > 50:
+        if insights["total_open_ports"] > 50:
             recommendations.append("🎯 Review and minimize exposed services")
-        
-        if not insights['os_distribution']:
+
+        if not insights["os_distribution"]:
             recommendations.append("🔍 Run OS detection scan for better visibility")
-        
+
         recommendations.append("📅 Schedule regular security scans (weekly/monthly)")
-        recommendations.append("📝 Document all exposed services and their business justification")
-        
+        recommendations.append(
+            "📝 Document all exposed services and their business justification"
+        )
+
         return recommendations
-    
+
     def _prepare_template_data(self):
         """Prepare enhanced data for HTML template"""
-        insights = self.data['insights']
-        
+        insights = self.data["insights"]
+
         # Calculate additional statistics
         service_stats = Counter()
         port_stats = Counter()
-        os_stats = Counter(insights['os_distribution'])
+        os_stats = Counter(insights["os_distribution"])
         device_type_stats = Counter()
         expiring_certs = []
-        
-        for host in self.data['hosts']:
+
+        for host in self.data["hosts"]:
             # Count device types
-            if 'device_classification' in host:
-                device_type = host['device_classification'].get('device_type', 'unknown')
+            if "device_classification" in host:
+                device_type = host["device_classification"].get(
+                    "device_type", "unknown"
+                )
                 device_type_stats[device_type] += 1
-            
+
             # Check for expiring certificates
-            if 'hardware_info' in host and 'certificates' in host['hardware_info']:
-                ip = host['addresses'].get('ipv4', 'unknown')
-                for cert in host['hardware_info']['certificates']:
-                    if cert.get('expiring_soon') or cert.get('expired'):
-                        expiring_certs.append({
-                            'host': ip,
-                            'port': cert['port'],
-                            'common_name': cert.get('common_name', ''),
-                            'days_remaining': cert.get('days_remaining', 0),
-                            'expired': cert.get('expired', False)
-                        })
-            
-            for port in host['ports']:
-                if port['state'] == 'open':
-                    service_stats[port['service'].get('name', 'unknown')] += 1
-                    port_stats[port['port']] += 1
-        
+            if "hardware_info" in host and "certificates" in host["hardware_info"]:
+                ip = host["addresses"].get("ipv4", "unknown")
+                for cert in host["hardware_info"]["certificates"]:
+                    if cert.get("expiring_soon") or cert.get("expired"):
+                        expiring_certs.append(
+                            {
+                                "host": ip,
+                                "port": cert["port"],
+                                "common_name": cert.get("common_name", ""),
+                                "days_remaining": cert.get("days_remaining", 0),
+                                "expired": cert.get("expired", False),
+                            }
+                        )
+
+            for port in host["ports"]:
+                if port["state"] == "open":
+                    service_stats[port["service"].get("name", "unknown")] += 1
+                    port_stats[port["port"]] += 1
+
         # Prepare severity counts
         severity_counts = Counter()
-        for issue in insights['potential_issues']:
-            severity_counts[issue['severity']] += 1
-        
+        for issue in insights["potential_issues"]:
+            severity_counts[issue["severity"]] += 1
+
         # Risk score calculation
         risk_score = self._calculate_risk_score(insights)
-        
+
         # Categorize issues for better display
-        categorized_issues = self._categorize_security_issues(insights['potential_issues'])
-        
+        categorized_issues = self._categorize_security_issues(
+            insights["potential_issues"]
+        )
+
         return {
-            'scan_info': self.data['scan_info'],
-            'generated_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'insights': insights,
-            'hosts': self.data['hosts'],
-            'service_stats': service_stats.most_common(10),
-            'port_stats': port_stats.most_common(10),
-            'os_stats': os_stats.most_common(),
-            'device_type_stats': device_type_stats.most_common(),
-            'expiring_certs': sorted(expiring_certs, key=lambda x: x['days_remaining']),
-            'severity_counts': dict(severity_counts),
-            'total_issues': len(insights['potential_issues']),
-            'risk_score': risk_score,
-            'categorized_issues': categorized_issues,
-            'recommendations': self._generate_recommendations(insights),
-            'scan_metadata': self._extract_scan_metadata()
+            "scan_info": self.data["scan_info"],
+            "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "insights": insights,
+            "hosts": self.data["hosts"],
+            "service_stats": service_stats.most_common(10),
+            "port_stats": port_stats.most_common(10),
+            "os_stats": os_stats.most_common(),
+            "device_type_stats": device_type_stats.most_common(),
+            "expiring_certs": sorted(expiring_certs, key=lambda x: x["days_remaining"]),
+            "severity_counts": dict(severity_counts),
+            "total_issues": len(insights["potential_issues"]),
+            "risk_score": risk_score,
+            "categorized_issues": categorized_issues,
+            "recommendations": self._generate_recommendations(insights),
+            "scan_metadata": self._extract_scan_metadata(),
+            "has_topology": "network_topology" in self.data,
+            "topology_stats": self.data.get("network_topology", {}).get("stats", {}),
+            "subnet_analysis": self.data.get("subnet_analysis", {}),
         }
-    
+
     def _calculate_risk_score(self, insights):
         """Calculate overall network risk score"""
         score = 100  # Start with perfect score
-        
+
         # Deduct for security issues
-        high_issues = sum(1 for i in insights['potential_issues'] if i['severity'] == 'high')
-        med_issues = sum(1 for i in insights['potential_issues'] if i['severity'] == 'medium')
-        
+        high_issues = sum(
+            1 for i in insights["potential_issues"] if i["severity"] == "high"
+        )
+        med_issues = sum(
+            1 for i in insights["potential_issues"] if i["severity"] == "medium"
+        )
+
         score -= high_issues * 15  # -15 points per high severity issue
-        score -= med_issues * 5    # -5 points per medium severity issue
-        
+        score -= med_issues * 5  # -5 points per medium severity issue
+
         # Deduct for exposed services
-        risky_services = ['telnet', 'ftp', 'vnc', 'rdp', 'smb']
-        for service in insights['unique_services']:
+        risky_services = ["telnet", "ftp", "vnc", "rdp", "smb"]
+        for service in insights["unique_services"]:
             if any(risky in service.lower() for risky in risky_services):
                 score -= 5
-        
+
         # Ensure score doesn't go below 0
         score = max(0, score)
-        
+
         # Determine risk level
         if score >= 90:
-            return {'score': score, 'level': 'Low', 'color': '#28a745'}
+            return {"score": score, "level": "Low", "color": "#28a745"}
         elif score >= 70:
-            return {'score': score, 'level': 'Medium', 'color': '#ffc107'}
+            return {"score": score, "level": "Medium", "color": "#ffc107"}
         elif score >= 50:
-            return {'score': score, 'level': 'High', 'color': '#fd7e14'}
+            return {"score": score, "level": "High", "color": "#fd7e14"}
         else:
-            return {'score': score, 'level': 'Critical', 'color': '#dc3545'}
-    
+            return {"score": score, "level": "Critical", "color": "#dc3545"}
+
     def _get_enhanced_html_template(self):
         """Return enhanced HTML template with interactive features"""
         return """
@@ -1649,7 +1794,53 @@ class ReportGenerator:
                 </div>
                 {% endfor %}
             </div>
-
+	    <!-- Network Topology Section -->
+{% if has_topology %}
+<div class="section">
+    <div class="section-title">🗺️ Network Topology</div>
+    
+    <div class="stats-container">
+        <div class="chart-container">
+            <h4>Network Segments</h4>
+            <div class="summary-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="summary-card">
+                    <h3>Segments</h3>
+                    <div class="value">{{ topology_stats.segments|length }}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Subnets</h3>
+                    <div class="value">{{ topology_stats.total_subnets }}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Gateways</h3>
+                    <div class="value">{{ topology_stats.gateway_devices }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if subnet_analysis.vlan_hints.potential_vlans %}
+    <div style="margin-top: 30px;">
+        <h4>🏷️ Potential VLANs Detected</h4>
+        {% for vlan in subnet_analysis.vlan_hints.potential_vlans %}
+        <div class="alert alert-info" style="background: #e3f2fd; border: 1px solid #2196f3; color: #1565c0;">
+            <div class="alert-content">
+                <strong>{{ vlan.vlan_id }}</strong> ({{ (vlan.confidence * 100)|round|int }}% confidence)
+                <br>Type: {{ vlan.type|replace('_', ' ')|title }}
+                <br>Subnets: {{ vlan.subnets|join(', ') }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div style="margin-top: 20px;">
+        <a href="output/topology/" class="action-button" style="display: inline-block; background: var(--primary); color: white; text-decoration: none;">
+            📊 View Full Topology Report
+        </a>
+    </div>
+</div>
+{% endif %}
             <!-- Recommendations -->
             <div class="recommendations">
                 <h3>💡 Recommendations</h3>
@@ -1727,69 +1918,134 @@ class ReportGenerator:
 </html>
         """
 
+
+def _generate_topology_section(self, template_data: Dict) -> str:
+    """Generate HTML section for network topology visualization"""
+    if "network_topology" not in self.data:
+        return ""
+
+    topology = self.data["network_topology"]
+
+    # Find the latest topology visualization file
+    topo_dir = Path("output/topology")
+    if topo_dir.exists():
+        # Look for matching topology file
+        html_files = list(topo_dir.glob("topology_*.html"))
+        if html_files:
+            # Get the most recent one
+            latest_topo = max(html_files, key=lambda p: p.stat().st_mtime)
+
+            # Read the plotly HTML
+            with open(latest_topo, "r") as f:
+                plotly_content = f.read()
+
+            # Extract just the div and script parts
+            import re
+
+            div_match = re.search(
+                r'<div id="[^"]+">.*?</div>', plotly_content, re.DOTALL
+            )
+            script_match = re.search(
+                r'<script type="text/javascript">.*?</script>',
+                plotly_content,
+                re.DOTALL,
+            )
+
+            if div_match and script_match:
+                return f"""
+                <div class="section">
+                    <div class="section-title">🗺️ Network Topology Map</div>
+                    <div style="width: 100%; height: 600px;">
+                        {div_match.group()}
+                    </div>
+                    {script_match.group()}
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>Topology Statistics</h4>
+                        <ul>
+                            <li>Network Segments: {len(topology['stats']['segments'])}</li>
+                            <li>Total Subnets: {topology['stats']['total_subnets']}</li>
+                            <li>Gateway Devices: {topology['stats']['gateway_devices']}</li>
+                        </ul>
+                    </div>
+                </div>
+                """
+
+    return ""
+
+
 def show_progress_animation(message, duration=2):
     """Show a simple progress animation"""
     frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     end_time = time.time() + duration
     i = 0
-    
+
     while time.time() < end_time:
         print(f"\r{frames[i % len(frames)]} {message}", end="", flush=True)
         time.sleep(0.1)
         i += 1
-    
+
     print(f"\r✓ {message}")
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Generate enhanced network scan reports")
+    parser = argparse.ArgumentParser(
+        description="Generate enhanced network scan reports"
+    )
     parser.add_argument("json_file", help="Path to parsed JSON file")
-    parser.add_argument("-o", "--output", default="output/reports",
-                       help="Output directory")
-    parser.add_argument("--format", choices=["html", "text", "csv", "all"], default="all",
-                       help="Report format")
-    parser.add_argument("--no-open", action="store_true",
-                       help="Don't auto-open HTML report")
+    parser.add_argument(
+        "-o", "--output", default="output/reports", help="Output directory"
+    )
+    parser.add_argument(
+        "--format",
+        choices=["html", "text", "csv", "all"],
+        default="all",
+        help="Report format",
+    )
+    parser.add_argument(
+        "--no-open", action="store_true", help="Don't auto-open HTML report"
+    )
     parser.add_argument("--template", help="Custom HTML template file")
-    
+
     args = parser.parse_args()
-    
+
     print("🚀 Network Report Generator - Enhanced Edition")
     print("=" * 60)
-    
+
     # Create output directory
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Load data and generate reports
     generator = ReportGenerator()
-    
+
     show_progress_animation("Loading scan data", 1)
-    
+
     if not generator.load_data(args.json_file):
         sys.exit(1)
-    
+
     # Generate output filename base
     json_path = Path(args.json_file)
-    base_name = json_path.stem.replace('_parsed', '')
+    base_name = json_path.stem.replace("_parsed", "")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
     success = True
-    
+
     if args.format in ["html", "all"]:
         show_progress_animation("Generating HTML report", 1.5)
         html_file = output_dir / f"{base_name}_report_{timestamp}.html"
         success = generator.generate_html_report(html_file, auto_open=not args.no_open)
-    
+
     if args.format in ["text", "all"]:
         show_progress_animation("Generating text report", 1)
         text_file = output_dir / f"{base_name}_report_{timestamp}.txt"
         success = success and generator.generate_text_report(text_file)
-    
+
     if args.format in ["csv", "all"]:
         show_progress_animation("Generating CSV report", 1)
         csv_file = output_dir / f"{base_name}_report_{timestamp}.csv"
         success = success and generator.generate_csv_report(csv_file)
-    
+
     if success:
         print("\n" + "=" * 60)
         print("✅ Report generation complete!")
@@ -1798,6 +2054,7 @@ def main():
     else:
         print("\n❌ Report generation failed")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
