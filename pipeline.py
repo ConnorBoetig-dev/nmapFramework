@@ -2,6 +2,7 @@
 """
 Network Security Scanner Pipeline - Ultimate Edition
 Professional network mapping with intelligent time estimates and enhanced UI
+Now with smart privilege escalation!
 """
 
 import argparse
@@ -16,6 +17,7 @@ import re
 import ipaddress
 import webbrowser
 import platform
+import shutil
 
 # Try to import colorama for cross-platform colored output
 try:
@@ -151,6 +153,92 @@ class NetworkScannerPipeline:
             '3': ('both', 'Both HTML and Text', '📊 Generate both report formats'),
         }
         
+    def check_dependencies(self):
+        """Check if required system dependencies are installed"""
+        missing_deps = []
+        
+        # Check for nmap
+        if not shutil.which('nmap'):
+            missing_deps.append('nmap')
+        
+        return missing_deps
+    
+    def check_python_dependencies(self):
+        """Check if Python dependencies are available"""
+        missing_modules = []
+        required_modules = ['colorama', 'lxml', 'jinja2', 'pandas', 'bs4']
+        
+        for module in required_modules:
+            try:
+                __import__(module)
+            except ImportError:
+                missing_modules.append(module)
+        
+        return missing_modules
+    
+    def is_running_as_root(self):
+        """Check if script is running with root privileges"""
+        return os.geteuid() == 0
+    
+    def is_in_virtualenv(self):
+        """Check if running in a virtual environment"""
+        return hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+    
+    def get_virtualenv_path(self):
+        """Get the virtual environment path"""
+        if os.environ.get('VIRTUAL_ENV'):
+            return os.environ['VIRTUAL_ENV']
+        return None
+    
+    def needs_privilege_escalation(self, scan_type):
+        """Check if the selected scan type requires root privileges"""
+        scan_id = scan_type if isinstance(scan_type, str) else scan_type['id']
+        for scan_info in self.scan_types.values():
+            if scan_info['id'] == scan_id:
+                return scan_info.get('requires_root', False)
+        return False
+    
+    def escalate_privileges(self, args_list):
+        """Re-execute the script with sudo, preserving virtual environment"""
+        print(f"\n{Fore.YELLOW}🔒 This operation requires administrator privileges.")
+        print(f"{Fore.WHITE}Please enter your password to continue...\n")
+        
+        # Prepare environment variables to preserve
+        env_vars = []
+        
+        # Preserve virtual environment
+        venv_path = self.get_virtualenv_path()
+        if venv_path:
+            env_vars.extend([
+                f'VIRTUAL_ENV={venv_path}',
+                f'PATH={venv_path}/bin:{os.environ.get("PATH", "")}',
+                f'PYTHONPATH={os.environ.get("PYTHONPATH", "")}'
+            ])
+        
+        # Build sudo command
+        sudo_cmd = ['sudo']
+        
+        # Add environment preservation
+        for env_var in env_vars:
+            sudo_cmd.extend(['-E', env_var])
+        
+        # Add the Python executable and script
+        sudo_cmd.extend([sys.executable] + args_list)
+        
+        # Add a marker to avoid infinite recursion
+        sudo_cmd.append('--elevated')
+        
+        try:
+            # Execute with sudo
+            result = subprocess.run(sudo_cmd)
+            sys.exit(result.returncode)
+        except KeyboardInterrupt:
+            print(f"\n{Fore.YELLOW}Operation cancelled by user.")
+            sys.exit(1)
+        except Exception as e:
+            print(f"{Fore.RED}❌ Failed to escalate privileges: {e}")
+            sys.exit(1)
+    
     def print_banner(self):
         """Display welcome banner"""
         banner = """
@@ -287,11 +375,6 @@ class NetworkScannerPipeline:
             
             if choice in self.scan_types:
                 scan = self.scan_types[choice]
-                if scan['requires_root'] and os.geteuid() != 0:
-                    print(f"{Fore.RED}❌ This scan requires root privileges.")
-                    print(f"{Fore.YELLOW}💡 Tip: Run with 'sudo python3 pipeline.py' or choose a different scan.")
-                    continue
-                
                 time_est, _ = self.calculate_scan_time(choice, host_count)
                 print(f"{Fore.GREEN}✓ Selected: {scan['name']} (estimated {time_est})")
                 return scan['id']
@@ -612,6 +695,20 @@ class NetworkScannerPipeline:
     
     def interactive_mode(self):
         """Run in interactive mode"""
+        # Check dependencies first
+        missing_deps = self.check_dependencies()
+        if missing_deps:
+            print(f"{Fore.RED}❌ Missing system dependencies: {', '.join(missing_deps)}")
+            print(f"{Fore.YELLOW}Please run the setup script first: python3 setup_dependencies.py")
+            sys.exit(1)
+        
+        missing_modules = self.check_python_dependencies()
+        if missing_modules:
+            print(f"{Fore.RED}❌ Missing Python modules: {', '.join(missing_modules)}")
+            print(f"{Fore.YELLOW}Please activate your virtual environment or run:")
+            print(f"{Fore.WHITE}  pip install -r requirements.txt")
+            sys.exit(1)
+        
         self.print_banner()
         
         print(f"\n{Fore.GREEN}Welcome! Let's set up your network security scan.")
@@ -623,19 +720,30 @@ class NetworkScannerPipeline:
         report_format = self.get_report_format()
         auto_open = self.get_auto_open_preference() if report_format in ['html', 'both'] else False
         
-        # Confirm and run
-        if self.confirm_scan(target, host_count, scan_type, report_format, auto_open):
-            start_time = time.time()
-            if self.run_pipeline(target, scan_type, report_format, auto_open):
-                elapsed = time.time() - start_time
-                print(f"\n{Fore.GREEN + Style.BRIGHT}🎉 All done! Your network analysis is complete.")
-                print(f"{Style.DIM}Total time: {elapsed/60:.1f} minutes")
-            else:
-                print(f"\n{Fore.RED}❌ Pipeline failed. Please check the errors above.")
-                sys.exit(1)
+        # Check if privilege escalation is needed
+        if self.needs_privilege_escalation(scan_type) and not self.is_running_as_root():
+            if self.confirm_scan(target, host_count, scan_type, report_format, auto_open):
+                # Need to escalate privileges
+                # Prepare arguments for re-execution
+                args = [__file__, target, '-t', scan_type, '--format', report_format]
+                if not auto_open:
+                    args.append('--no-open')
+                
+                self.escalate_privileges(args)
         else:
-            print(f"\n{Fore.YELLOW}Pipeline cancelled.")
-            sys.exit(0)
+            # Either doesn't need root or already running as root
+            if self.confirm_scan(target, host_count, scan_type, report_format, auto_open):
+                start_time = time.time()
+                if self.run_pipeline(target, scan_type, report_format, auto_open):
+                    elapsed = time.time() - start_time
+                    print(f"\n{Fore.GREEN + Style.BRIGHT}🎉 All done! Your network analysis is complete.")
+                    print(f"{Style.DIM}Total time: {elapsed/60:.1f} minutes")
+                else:
+                    print(f"\n{Fore.RED}❌ Pipeline failed. Please check the errors above.")
+                    sys.exit(1)
+            else:
+                print(f"\n{Fore.YELLOW}Pipeline cancelled.")
+                sys.exit(0)
 
 def main():
     # Set up argument parser for non-interactive mode
@@ -696,6 +804,9 @@ Examples:
     parser.add_argument("--no-open", action="store_true",
                        help="Don't auto-open HTML reports")
     
+    # Hidden flag to indicate we're already elevated
+    parser.add_argument("--elevated", action="store_true", help=argparse.SUPPRESS)
+    
     args = parser.parse_args()
     
     # Determine mode of operation
@@ -707,9 +818,16 @@ Examples:
     else:
         # Arguments provided - run in automated mode
         if args.targets:
-            # New scan
-            print(f"{Fore.CYAN}Running automated scan...")
-            pipeline.run_pipeline(args.targets, args.type, args.format, not args.no_open)
+            # Check if we need privilege escalation
+            if pipeline.needs_privilege_escalation(args.type) and not pipeline.is_running_as_root() and not args.elevated:
+                # Need to escalate
+                print(f"{Fore.YELLOW}🔒 The selected scan type requires administrator privileges.")
+                args_list = sys.argv[:]
+                pipeline.escalate_privileges(args_list)
+            else:
+                # New scan - either doesn't need root or already elevated
+                print(f"{Fore.CYAN}Running automated scan...")
+                pipeline.run_pipeline(args.targets, args.type, args.format, not args.no_open)
         
         elif args.xml_file:
             # Process existing XML

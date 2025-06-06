@@ -1,46 +1,16 @@
-# Network Mapper - Python Dependencies
-# Core network scanning and analysis tools
-
-# Network scanning
-python-nmap>=1.6.0
-
-# XML and HTML parsing
+# Network Scanner Dependencies
+# Core functionality
+colorama>=0.4.6
+python-nmap==0.7.1
 lxml>=4.9.0
-beautifulsoup4>=4.11.0
 
-# Template rendering for reports
+# Report generation
 jinja2>=3.1.0
+beautifulsoup4>=4.12.0
 
-# Data analysis and manipulation
-pandas>=1.5.0
-numpy>=1.24.0
+# Data analysis
+pandas>=2.0.0
 
-# JSON handling (usually built-in, but explicit for clarity)
-# json - built-in module
-
-# System and file operations
-# os, sys, subprocess, pathlib - built-in modules
-
-# Date and time handling
-# datetime - built-in module
-
-# Argument parsing
-# argparse - built-in module
-
-# Progress bars and CLI enhancements
-tqdm>=4.64.0
-
-# Logging enhancements
-colorlog>=6.7.0
-
-# Network utilities
+# Optional but recommended
 requests>=2.28.0
-
-# Report generation utilities
-matplotlib>=3.6.0
-seaborn>=0.12.0
-
-# Development and testing (optional)
-pytest>=7.2.0
-black>=22.10.0
-flake8>=5.0.0
+python-dateutil>=2.8.0
