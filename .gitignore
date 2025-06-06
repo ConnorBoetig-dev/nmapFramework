@@ -1,0 +1,8 @@
+# ignore the whole output tree (reports, raw scans, etc.)
+output/
+
+# ignore your virtual-env
+venv/
+
+# ignore any temporary CSVs anywhere
+*.csv
