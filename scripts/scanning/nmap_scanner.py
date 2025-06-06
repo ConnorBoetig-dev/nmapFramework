@@ -1,36 +1,226 @@
 #!/usr/bin/env python3
 """
-Automated Nmap Scanner - Enhanced Version
-Performs comprehensive network scans with advanced security analysis
+Enhanced Nmap Network Scanner with Live Progress
+Professional wrapper around nmap with real-time progress tracking
 """
 
 import nmap
-import argparse
-import os
-import sys
 import json
-import datetime
+import sys
+import os
+import subprocess
+import threading
+import time
+import re
 from pathlib import Path
+from datetime import datetime
+from queue import Queue
+
+# Try to import tqdm for better progress bars
+try:
+    from tqdm import tqdm
+    TQDM_AVAILABLE = True
+except ImportError:
+    TQDM_AVAILABLE = False
+    print("Note: Install tqdm for better progress bars (pip install tqdm)")
+
+# Color support
+try:
+    from colorama import init, Fore, Back, Style
+    init(autoreset=True)
+    COLORS_AVAILABLE = True
+except ImportError:
+    COLORS_AVAILABLE = False
+    class MockColor:
+        def __getattr__(self, name):
+            return ""
+    Fore = Back = Style = MockColor()
 
 class NetworkScanner:
-    def __init__(self, output_dir="output/xml/raw"):
+    def __init__(self):
         self.nm = nmap.PortScanner()
-        self.output_dir = Path(output_dir)
+        self.output_dir = Path("output/xml/raw")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.progress_queue = Queue()
+        self.scan_stats = {
+            'hosts_total': 0,
+            'hosts_up': 0,
+            'hosts_scanned': 0,
+            'open_ports': 0,
+            'percent_complete': 0,
+            'current_host': '',
+            'phase': 'Initializing'
+        }
+    
+    def _parse_nmap_progress(self, line):
+        """Parse nmap output line for progress information"""
+        # Parse percentage from stats line
+        percent_match = re.search(r'About (\d+\.\d+)% done', line)
+        if percent_match:
+            self.scan_stats['percent_complete'] = float(percent_match.group(1))
         
-    def scan_network(self, targets, scan_type="comprehensive", timing=3):
+        # Parse host discovery
+        if 'Nmap scan report for' in line:
+            host_match = re.search(r'Nmap scan report for (.+)', line)
+            if host_match:
+                self.scan_stats['current_host'] = host_match.group(1)
+                self.scan_stats['hosts_scanned'] += 1
+        
+        # Parse host status
+        if 'Host is up' in line:
+            self.scan_stats['hosts_up'] += 1
+        
+        # Parse open ports
+        if '/tcp' in line and 'open' in line:
+            self.scan_stats['open_ports'] += 1
+        
+        # Parse scan phases
+        if 'Initiating' in line:
+            phase_match = re.search(r'Initiating (.+) at', line)
+            if phase_match:
+                self.scan_stats['phase'] = phase_match.group(1)
+        
+        # ETA parsing
+        eta_match = re.search(r'ETC: (\d+:\d+)', line)
+        if eta_match:
+            self.scan_stats['eta'] = eta_match.group(1)
+    
+    def _run_nmap_with_progress(self, target, arguments, output_file):
+        """Run nmap with real-time progress tracking"""
+        # Build command
+        cmd = [
+            'nmap',
+            '-oX', output_file,  # XML output
+            '--stats-every', '2s',  # Update stats every 2 seconds
+            '-v'  # Verbose for more output
+        ] + arguments.split() + [target]
+        
+        # Start time for duration calculation
+        start_time = time.time()
+        
+        # Run nmap with subprocess
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1
+        )
+        
+        # Process output line by line
+        for line in process.stdout:
+            line = line.strip()
+            if line:
+                # Parse progress information
+                self._parse_nmap_progress(line)
+                
+                # Calculate elapsed time
+                elapsed = time.time() - start_time
+                self.scan_stats['elapsed'] = elapsed
+                
+                # Put update in queue
+                self.progress_queue.put({
+                    'line': line,
+                    'stats': self.scan_stats.copy()
+                })
+        
+        # Wait for process to complete
+        process.wait()
+        
+        return process.returncode == 0
+    
+    def _display_progress(self):
+        """Display progress updates from the queue"""
+        if TQDM_AVAILABLE:
+            # Use tqdm progress bar
+            with tqdm(total=100, desc="Scanning", unit="%", 
+                     bar_format='{desc}: {percentage:3.0f}%|{bar}| [{elapsed}<{remaining}]') as pbar:
+                
+                last_percent = 0
+                while True:
+                    try:
+                        update = self.progress_queue.get(timeout=0.1)
+                        stats = update['stats']
+                        
+                        # Update progress bar
+                        current_percent = stats['percent_complete']
+                        if current_percent > last_percent:
+                            pbar.update(current_percent - last_percent)
+                            last_percent = current_percent
+                        
+                        # Update description with current activity
+                        desc = f"Scanning {stats['current_host']}" if stats['current_host'] else stats['phase']
+                        pbar.set_description(desc)
+                        
+                        # Update postfix with stats
+                        pbar.set_postfix({
+                            'Hosts': f"{stats['hosts_up']}/{stats['hosts_scanned']}",
+                            'Ports': stats['open_ports']
+                        })
+                        
+                        # Check if scan is complete
+                        if 'Nmap done' in update['line']:
+                            pbar.update(100 - last_percent)
+                            break
+                            
+                    except:
+                        # Queue timeout - check if thread is still alive
+                        if not hasattr(self, '_scan_thread') or not self._scan_thread.is_alive():
+                            break
+        else:
+            # Fallback progress display without tqdm
+            last_update = 0
+            spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+            spinner_idx = 0
+            
+            while True:
+                try:
+                    update = self.progress_queue.get(timeout=0.1)
+                    stats = update['stats']
+                    
+                    # Update every 0.5 seconds to avoid too much output
+                    current_time = time.time()
+                    if current_time - last_update > 0.5:
+                        # Clear line and print progress
+                        print(f"\r{spinner[spinner_idx % len(spinner)]} "
+                              f"{Fore.CYAN}Progress: {stats['percent_complete']:.1f}%{Style.RESET_ALL} | "
+                              f"{Fore.GREEN}Hosts: {stats['hosts_up']}/{stats['hosts_scanned']}{Style.RESET_ALL} | "
+                              f"{Fore.YELLOW}Ports: {stats['open_ports']}{Style.RESET_ALL} | "
+                              f"Phase: {stats['phase'][:30]}", end='', flush=True)
+                        
+                        spinner_idx += 1
+                        last_update = current_time
+                    
+                    # Check if scan is complete
+                    if 'Nmap done' in update['line']:
+                        print()  # New line after progress
+                        break
+                        
+                except:
+                    # Queue timeout - check if thread is still alive
+                    if not hasattr(self, '_scan_thread') or not self._scan_thread.is_alive():
+                        print()  # New line after progress
+                        break
+    
+    def scan_network(self, target, scan_type="comprehensive", timing=3):
         """
-        Perform network scan with specified parameters
+        Perform network scan with specified parameters and live progress
         
         Args:
-            targets (str): Target IP range or single IP
-            scan_type (str): Type of scan to perform
-            timing (int): Timing template (0-5, 5 is fastest)
-        """
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            target: IP address, hostname, or network range to scan
+            scan_type: Type of scan to perform
+            timing: Nmap timing template (0-5, higher is faster but less accurate)
         
-        # Define scan configurations - Enhanced with advanced scan types
+        Returns:
+            Path to the generated XML file
+        """
+        # Define scan configurations
         scan_configs = {
+            "discovery": {
+                "arguments": f"-sn -T{timing}",
+                "description": "Host discovery scan",
+                "estimated_time": "1-2 minutes"
+            },
             "quick": {
                 "arguments": f"-T{timing} -F --version-intensity 0",
                 "description": "Quick scan - top 100 ports",
@@ -38,357 +228,237 @@ class NetworkScanner:
             },
             "comprehensive": {
                 "arguments": f"-T{timing} -sT -sV -A --version-intensity 5",
-                "description": "Comprehensive scan - service detection (TCP connect, no root needed)",
-                "estimated_time": "5-10 minutes"
-            },
-            "comprehensive_root": {
-                "arguments": f"-T{timing} -sS -sV -O -A --version-intensity 5",
-                "description": "Comprehensive scan with SYN stealth and OS detection (requires root)",
+                "description": "Comprehensive scan with service/OS detection",
                 "estimated_time": "5-10 minutes"
             },
             "full_tcp": {
                 "arguments": f"-T{timing} -sT -sV -p- --version-intensity 3",
-                "description": "Full TCP port scan with service detection (all 65535 ports, no root)",
-                "estimated_time": "15-30 minutes"
-            },
-            "full_tcp_root": {
-                "arguments": f"-T{timing} -sS -sV -p- --version-intensity 3",
-                "description": "Full TCP port scan with SYN stealth (requires root)",
+                "description": "Full TCP port scan (all 65535 ports)",
                 "estimated_time": "15-30 minutes"
             },
             "udp_top": {
-                "arguments": f"-T{timing} -sU --top-ports 1000 -sV",
-                "description": "Top 1000 UDP ports with service detection (requires root for UDP)",
-                "estimated_time": "10-20 minutes"
-            },
-            "udp_scan": {
                 "arguments": f"-T{timing} -sU --top-ports 100 -sV",
-                "description": "UDP port scan for top 100 ports (requires root)",
+                "description": "Top 100 UDP ports",
                 "estimated_time": "10-20 minutes"
             },
-            "discovery": {
-                "arguments": f"-T{timing} -sn",
-                "description": "Host discovery only - ping sweep",
-                "estimated_time": "30 seconds - 2 minutes"
-            },
-            "full_comprehensive": {
-                "arguments": f"-T{timing} -sT -sV -A --script=default,discovery,safe --top-ports 2000",
-                "description": "Complete TCP scan with all safe scripts (no root needed)",
-                "estimated_time": "20-45 minutes"
-            },
-            "full_comprehensive_root": {
-                "arguments": f"-T{timing} -sS -sU -sV -O -A --script=default,discovery,safe --top-ports 2000",
-                "description": "Complete TCP/UDP scan with all safe scripts (requires root)",
-                "estimated_time": "20-45 minutes"
-            },
-            "vulnerability_scan": {
-                "arguments": f"-T{timing} -sT -sV --script=vuln --top-ports 2000 --version-intensity 7",
-                "description": "Focused vulnerability detection (no root needed)",
+            "vulnerability": {
+                "arguments": f"-T{timing} -sT -sV --script=vuln --top-ports 2000",
+                "description": "Vulnerability scan with NSE scripts",
                 "estimated_time": "15-25 minutes"
             },
-            "stealth_comprehensive": {
-                "arguments": f"-T{timing} -sS -sV -O --script=default,safe -f --randomize-hosts --source-port 443",
-                "description": "Stealth comprehensive scan with fragmentation (requires root)",
-                "estimated_time": "10-20 minutes"
-            },
-            "stealth_scan": {
-                "arguments": f"-T2 -sS -sV -f --randomize-hosts --source-port 443",
-                "description": "Stealthy half-open scan (requires root)",
-                "estimated_time": "5-10 minutes"
+            "vulnerability_scan": {  # Alias for compatibility
+                "arguments": f"-T{timing} -sT -sV --script=vuln --top-ports 2000",
+                "description": "Vulnerability scan with NSE scripts",
+                "estimated_time": "15-25 minutes"
             },
             "web_discovery": {
-                "arguments": f"-T{timing} -sT -sV --script=http-*,ssl-*,tls-* -p 80,443,8080,8443,8000,8888,9000",
-                "description": "Web application and SSL/TLS discovery",
+                "arguments": f"-T{timing} -sT -sV --script=http-enum,http-headers,ssl-cert -p 80,443,8080,8443",
+                "description": "Web service discovery",
                 "estimated_time": "5-10 minutes"
             },
             "database_discovery": {
-                "arguments": f"-T{timing} -sT -sV --script=*sql*,*db*,oracle-*,mongodb-* -p 1433,3306,5432,27017,1521,6379",
-                "description": "Database service discovery and basic enumeration",
+                "arguments": f"-T{timing} -sT -sV --script=mysql*,ms-sql*,mongodb*,redis* -p 1433,3306,5432,27017,6379",
+                "description": "Database service discovery",
                 "estimated_time": "3-8 minutes"
             },
-            "smb_discovery": {
-                "arguments": f"-T{timing} -sT -sV --script=smb-*,netbios-* -p 135,139,445,137",
-                "description": "SMB/NetBIOS discovery and enumeration",
-                "estimated_time": "3-7 minutes"
-            },
-            "everything_novuln": {
-                "arguments": f"-T{timing} -sT -sV -A -p- --script=default,discovery,safe,http-*,ssl-*,*sql*,*db*",
-                "description": "Complete scan: Discovery + Quick + Comprehensive + Full TCP + Web + DB",
-                "estimated_time": "20-40 minutes"
-            },
-            "everything_withvuln": {
-                "arguments": f"-T{timing} -sT -sV -A -p- --script=default,discovery,safe,vuln,http-*,ssl-*,*sql*,*db*",
-                "description": "Ultimate scan: Everything + Vulnerability detection",
-                "estimated_time": "30-60 minutes"
-            },
-            "top_1000_intense": {
-                "arguments": f"-T4 -sT -sV -A --top-ports 1000 --version-intensity 9",
-                "description": "Top 1000 ports with aggressive service detection",
+            "stealth_scan": {
+                "arguments": f"-T2 -sS -sV -f --randomize-hosts",
+                "description": "Stealthy SYN scan",
                 "estimated_time": "5-10 minutes"
             },
-            "max_intensity": {
-                "arguments": f"-T{timing} -sS -sU -sV -O -A --script=all --version-intensity 9 -p- --min-rate 1000",
-                "description": "Maximum intensity scan - all ports, all scripts (requires root)",
-                "estimated_time": "45-120 minutes"
+            "udp_scan": {
+                "arguments": f"-T{timing} -sU --top-ports 100 -sV",
+                "description": "UDP scan of top 100 ports",
+                "estimated_time": "10-20 minutes"
             },
-            "max_intensity_noroot": {
-                "arguments": f"-T{timing} -sT -sV -A --script=safe,default,discovery --version-intensity 9 --top-ports 5000",
-                "description": "Maximum intensity scan without root - TCP connect scan",
-                "estimated_time": "25-60 minutes"
-            },
-            "custom_ports": {
-                "arguments": f"-T{timing} -sT -sV --script=default,safe",
-                "description": "Custom port range scan (specify with --ports argument)",
-                "estimated_time": "Variable"
+            "everything_with_vuln": {
+                "arguments": f"-T{timing} -sT -sV -A -p- --script=default,vuln,discovery",
+                "description": "Complete scan with all ports and vulnerability detection",
+                "estimated_time": "30-60 minutes"
             }
         }
         
-        if scan_type not in scan_configs:
-            print(f"Unknown scan type: {scan_type}")
-            print(f"Available types:")
-            for scan_name, config in scan_configs.items():
-                print(f"  {scan_name:<25} - {config['description']}")
-                print(f"                          Estimated time: {config['estimated_time']}")
-            return None
-            
-        config = scan_configs[scan_type]
-        output_file = self.output_dir / f"scan_{scan_type}_{timestamp}.xml"
+        # Get scan configuration
+        config = scan_configs.get(scan_type, scan_configs["comprehensive"])
         
-        print(f"\U0001f3af Starting {config['description']}...")
-        print(f"\U0001f4e1 Target: {targets}")
-        print(f"\u2699\ufe0f  Arguments: {config['arguments']}")
-        print(f"\u23f1\ufe0f  Estimated time: {config['estimated_time']}")
-        print(f"\U0001f4c1 Output: {output_file}")
+        # Print scan information
+        print(f"\n{Fore.CYAN}🎯 Starting {scan_type.title()} scan - {config['description']}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}📡 Target: {target}{Style.RESET_ALL}")
+        print(f"{Fore.BLUE}⚙️  Arguments: {config['arguments']}{Style.RESET_ALL}")
+        print(f"{Fore.MAGENTA}⏱️  Estimated time: {config['estimated_time']}{Style.RESET_ALL}")
+        
+        # Generate output filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        xml_filename = self.output_dir / f"scan_{scan_type}_{timestamp}.xml"
+        print(f"{Fore.GREEN}📁 Output: {xml_filename}{Style.RESET_ALL}")
         print("=" * 60)
         
-        try:
-            # Perform the scan
-            self.nm.scan(
-                hosts=targets,
-                arguments=config['arguments']
-            )
-            
-            # Save XML output manually with better encoding handling
-            xml_output = self.nm.get_nmap_last_output()
-            with open(output_file, 'w', encoding='utf-8') as f:
-                if isinstance(xml_output, bytes):
-                    f.write(xml_output.decode('utf-8', errors='replace'))
-                else:
-                    f.write(xml_output)
-            
-            # Enhanced scan summary with more details
-            hosts_up = [h for h in self.nm.all_hosts() if self.nm[h].state() == 'up']
-            total_ports = 0
-            open_ports = 0
-            
-            for host in hosts_up:
-                for protocol in self.nm[host].all_protocols():
-                    ports = self.nm[host][protocol].keys()
-                    total_ports += len(ports)
-                    open_ports += len([p for p in ports if self.nm[host][protocol][p]['state'] == 'open'])
-            
-            scan_summary = {
-                "timestamp": timestamp,
-                "scan_type": scan_type,
-                "targets": targets,
-                "arguments": config['arguments'],
-                "description": config['description'],
-                "estimated_time": config['estimated_time'],
-                "xml_file": str(output_file),
-                "hosts_scanned": len(self.nm.all_hosts()),
-                "hosts_up": len(hosts_up),
-                "total_ports_scanned": total_ports,
-                "open_ports_found": open_ports,
-                "scan_stats": {
-                    "elapsed_time": self.nm.scanstats().get('elapsed', 'Unknown'),
-                    "up_hosts": self.nm.scanstats().get('uphosts', 'Unknown'),
-                    "down_hosts": self.nm.scanstats().get('downhosts', 'Unknown')
+        # Reset stats
+        self.scan_stats = {
+            'hosts_total': 0,
+            'hosts_up': 0,
+            'hosts_scanned': 0,
+            'open_ports': 0,
+            'percent_complete': 0,
+            'current_host': '',
+            'phase': 'Initializing'
+        }
+        
+        # Clear the queue
+        while not self.progress_queue.empty():
+            self.progress_queue.get()
+        
+        # Start scan in thread
+        self._scan_thread = threading.Thread(
+            target=self._run_nmap_with_progress,
+            args=(target, config['arguments'], str(xml_filename))
+        )
+        self._scan_thread.start()
+        
+        # Display progress
+        self._display_progress()
+        
+        # Wait for scan to complete
+        self._scan_thread.join()
+        
+        # Parse final results for summary
+        if xml_filename.exists():
+            try:
+                nm_result = nmap.PortScanner()
+                nm_result.analyse_nmap_xml_scan(open(str(xml_filename)).read())
+                
+                # Count results
+                total_hosts = len(nm_result.all_hosts())
+                hosts_up = len([h for h in nm_result.all_hosts() if nm_result[h].state() == 'up'])
+                open_ports = sum(len([p for p in nm_result[h].all_tcp() if nm_result[h].tcp(p)['state'] == 'open']) 
+                               for h in nm_result.all_hosts())
+                
+                # Save summary
+                summary_file = self.output_dir / f"summary_{scan_type}_{timestamp}.json"
+                summary_data = {
+                    "scan_type": scan_type,
+                    "target": target,
+                    "timestamp": timestamp,
+                    "total_hosts": total_hosts,
+                    "hosts_up": hosts_up,
+                    "open_ports": open_ports,
+                    "xml_file": str(xml_filename),
+                    "duration": self.scan_stats.get('elapsed', 0)
                 }
+                
+                with open(summary_file, 'w') as f:
+                    json.dump(summary_data, f, indent=2)
+                
+                # Print summary
+                print(f"\n{Fore.GREEN}✅ Scan completed successfully!{Style.RESET_ALL}")
+                print(f"{Fore.CYAN}📊 Results Summary:{Style.RESET_ALL}")
+                print(f"   • Hosts up: {hosts_up}/{total_hosts}")
+                print(f"   • Open ports found: {open_ports}")
+                print(f"   • Scan duration: {self.scan_stats.get('elapsed', 0):.1f} seconds")
+                print(f"{Fore.GREEN}📁 Results saved to: {xml_filename}{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}📋 Summary saved to: {summary_file}{Style.RESET_ALL}")
+                
+                return str(xml_filename)
+                
+            except Exception as e:
+                print(f"{Fore.RED}❌ Error parsing results: {e}{Style.RESET_ALL}")
+                return str(xml_filename)
+        else:
+            print(f"{Fore.RED}❌ Scan failed - no output file generated{Style.RESET_ALL}")
+            return None
+    
+    def parse_results(self, xml_file):
+        """Parse nmap XML results into structured format"""
+        try:
+            with open(xml_file, 'r') as f:
+                self.nm.analyse_nmap_xml_scan(f.read())
+            
+            results = {
+                'scan_info': self.nm.scaninfo(),
+                'hosts': []
             }
             
-            summary_file = self.output_dir / f"summary_{scan_type}_{timestamp}.json"
-            with open(summary_file, 'w') as f:
-                json.dump(scan_summary, f, indent=2)
+            for host in self.nm.all_hosts():
+                host_info = {
+                    'ip': host,
+                    'hostname': self.nm[host].hostname(),
+                    'state': self.nm[host].state(),
+                    'os': self._get_os_info(host),
+                    'ports': []
+                }
                 
-            print("\u2705 Scan completed successfully!")
-            print(f"\U0001f4ca Results Summary:")
-            print(f"   \u2022 Hosts up: {len(hosts_up)}/{len(self.nm.all_hosts())}")
-            print(f"   \u2022 Open ports found: {open_ports}")
-            print(f"   \u2022 Total ports scanned: {total_ports}")
-            print(f"\U0001f4c1 Results saved to: {output_file}")
-            print(f"\U0001f4cb Summary saved to: {summary_file}")
+                # Get all protocols
+                for proto in self.nm[host].all_protocols():
+                    ports = self.nm[host][proto].keys()
+                    for port in ports:
+                        port_info = self.nm[host][proto][port]
+                        host_info['ports'].append({
+                            'port': port,
+                            'protocol': proto,
+                            'state': port_info['state'],
+                            'service': port_info['name'],
+                            'version': port_info.get('version', ''),
+                            'product': port_info.get('product', '')
+                        })
+                
+                results['hosts'].append(host_info)
             
-            return output_file
+            return results
             
         except Exception as e:
-            print(f"\u274c Scan failed: {str(e)}")
+            print(f"Error parsing XML file: {e}")
             return None
     
-    def get_recommended_scan_sequence(self, target_type="network"):
-        """
-        Get recommended scan sequence for comprehensive analysis
-        """
-        sequences = {
-            "network": [
-                ("discovery", "Find live hosts"),
-                ("comprehensive", "Service detection (no root)"),
-                ("vulnerability_scan", "Security vulnerability assessment"),
-                ("web_discovery", "Web application discovery")
-            ],
-            "host": [
-                ("comprehensive", "Service detection (no root)"),
-                ("full_tcp", "Complete TCP port coverage"),
-                ("vulnerability_scan", "Security assessment"),
-                ("web_discovery", "Web services")
-            ],
-            "webapp": [
-                ("web_discovery", "Web application discovery"),
-                ("vulnerability_scan", "Web vulnerability assessment"),
-                ("comprehensive", "Complete service analysis")
-            ],
-            "database": [
-                ("database_discovery", "Database service enumeration"),
-                ("vulnerability_scan", "Database security assessment"),
-                ("comprehensive", "Complete analysis")
-            ],
-            "maximum_noroot": [
-                ("discovery", "Host discovery"),
-                ("max_intensity_noroot", "Maximum intensity without root"),
-                ("vulnerability_scan", "Security assessment"),
-                ("web_discovery", "Web application analysis"),
-                ("database_discovery", "Database enumeration")
-            ]
-        }
-        
-        return sequences.get(target_type, sequences["network"])
+    def _get_os_info(self, host):
+        """Extract OS information for a host"""
+        os_info = {}
+        if 'osclass' in self.nm[host]:
+            for osclass in self.nm[host]['osclass']:
+                os_info = {
+                    'type': osclass.get('type', ''),
+                    'vendor': osclass.get('vendor', ''),
+                    'family': osclass.get('osfamily', ''),
+                    'generation': osclass.get('osgen', ''),
+                    'accuracy': osclass.get('accuracy', '')
+                }
+                break  # Just take the first match
+        return os_info
 
 def main():
-    parser = argparse.ArgumentParser(description="Advanced Network Scanner with Comprehensive Analysis")
-    parser.add_argument("targets", help="Target IP range (e.g., 192.168.1.0/24) or single IP")
-    parser.add_argument("-t", "--type", default="comprehensive", 
-                       choices=["quick", "comprehensive", "comprehensive_root", "full_tcp", "full_tcp_root", 
-                               "udp_top", "udp_scan", "discovery", "full_comprehensive", "full_comprehensive_root", 
-                               "vulnerability_scan", "stealth_comprehensive", "stealth_scan", "web_discovery", 
-                               "database_discovery", "smb_discovery", "everything_novuln", "everything_withvuln",
-                               "top_1000_intense", "max_intensity", "max_intensity_noroot", "custom_ports"],
-                       help="Scan type")
-    parser.add_argument("-T", "--timing", type=int, default=3, choices=range(0, 6),
-                       help="Timing template (0=paranoid, 1=sneaky, 2=polite, 3=normal, 4=aggressive, 5=insane)")
-    parser.add_argument("-o", "--output", default="output/xml/raw",
-                       help="Output directory")
-    parser.add_argument("--ports", help="Custom port range (use with custom_ports scan type)")
-    parser.add_argument("--sequence", choices=["network", "host", "webapp", "database", "maximum_noroot"],
-                       help="Show recommended scan sequence for target type")
-    parser.add_argument("--list-scans", action="store_true",
-                       help="List all available scan types with descriptions")
-    
-    args = parser.parse_args()
-    
-    scanner = NetworkScanner(args.output)
-    
-    # Handle special arguments
-    if args.list_scans:
-        print("\U0001f50d Available Scan Types:")
-        print("=" * 80)
-        scan_configs = {
-            "quick": "Quick scan - top 100 ports (1-2 min)",
-            "comprehensive": "Service detection, no root needed (5-10 min)",
-            "comprehensive_root": "Full comprehensive with OS detection, needs root (5-10 min)",
-            "full_tcp": "All TCP ports, no root (15-30 min)",
-            "full_tcp_root": "All TCP ports with SYN stealth, needs root (15-30 min)", 
-            "udp_top": "Top 1000 UDP ports, needs root (10-20 min)",
-            "udp_scan": "UDP scan top 100 ports, needs root (10-20 min)",
-            "discovery": "Host discovery only (30 sec - 2 min)",
-            "full_comprehensive": "Complete TCP scan, no root (20-45 min)",
-            "full_comprehensive_root": "Complete TCP/UDP scan, needs root (20-45 min)",
-            "vulnerability_scan": "Vulnerability detection, no root (15-25 min)",
-            "stealth_comprehensive": "Stealth comprehensive scan, needs root (10-20 min)",
-            "stealth_scan": "Stealthy SYN scan, needs root (5-10 min)",
-            "web_discovery": "Web application discovery (5-10 min)",
-            "database_discovery": "Database service enumeration (3-8 min)",
-            "smb_discovery": "SMB/NetBIOS discovery (3-7 min)",
-            "everything_novuln": "Everything scan without vulnerability (20-40 min)",
-            "everything_withvuln": "Everything scan with vulnerability (30-60 min)",
-            "top_1000_intense": "Top 1000 ports intensive scan (5-10 min)",
-            "max_intensity": "Maximum intensity, needs root (45-120 min)",
-            "max_intensity_noroot": "Maximum intensity, no root needed (25-60 min)",
-            "custom_ports": "Custom port range scan"
-        }
-        
-        print("\U0001f7e2 NO ROOT REQUIRED:")
-        no_root_scans = ["quick", "comprehensive", "full_tcp", "discovery", "full_comprehensive", 
-                        "vulnerability_scan", "web_discovery", "database_discovery", "smb_discovery", 
-                        "everything_novuln", "everything_withvuln", "top_1000_intense",
-                        "max_intensity_noroot", "custom_ports"]
-        for scan in no_root_scans:
-            if scan in scan_configs:
-                print(f"  {scan:<25} - {scan_configs[scan]}")
-            
-        print("\n\U0001f534 ROOT REQUIRED:")
-        root_scans = ["comprehensive_root", "full_tcp_root", "udp_top", "udp_scan", 
-                     "full_comprehensive_root", "stealth_comprehensive", "stealth_scan", "max_intensity"]
-        for scan in root_scans:
-            if scan in scan_configs:
-                print(f"  {scan:<25} - {scan_configs[scan]}")
-        return
-    
-    if args.sequence:
-        print(f"\U0001f3af Recommended scan sequence for {args.sequence} analysis:")
-        print("=" * 60)
-        sequence = scanner.get_recommended_scan_sequence(args.sequence)
-        for i, (scan_type, description) in enumerate(sequence, 1):
-            print(f"{i}. {scan_type:<25} - {description}")
-        print(f"\nTo run sequence:")
-        for scan_type, _ in sequence:
-            print(f"python3 {sys.argv[0]} {args.targets} -t {scan_type}")
-        return
-    
-    # Check if running as root and recommend alternatives
-    root_required_scans = ["comprehensive_root", "full_tcp_root", "udp_top", "udp_scan",
-                          "full_comprehensive_root", "stealth_comprehensive", "stealth_scan", "max_intensity"]
-    
-    if args.type in root_required_scans and os.geteuid() != 0:
-        print("\u26a0\ufe0f  Warning: This scan type requires root privileges")
-        print("   Consider these alternatives that don't need root:")
-        alternatives = {
-            "comprehensive_root": "comprehensive",
-            "full_tcp_root": "full_tcp", 
-            "full_comprehensive_root": "full_comprehensive",
-            "max_intensity": "max_intensity_noroot",
-            "udp_top": "top_1000_intense",
-            "udp_scan": "top_1000_intense",
-            "stealth_scan": "comprehensive",
-            "stealth_comprehensive": "comprehensive"
-        }
-        if args.type in alternatives:
-            alt = alternatives[args.type]
-            print(f"   Try: python3 {sys.argv[0]} {args.targets} -t {alt} -T {args.timing}")
-        print()
-    
-    # Handle custom ports
-    if args.type == "custom_ports" and not args.ports:
-        print("\u274c Error: --ports argument required for custom_ports scan type")
-        print("   Example: --ports 22,80,443,8080-8090")
+    """Example usage and testing"""
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} <target> [scan_type]")
+        print("\nScan types:")
+        print("  - discovery: Host discovery only")
+        print("  - quick: Fast scan of common ports")
+        print("  - comprehensive: Detailed scan with OS/service detection")
+        print("  - full_tcp: All TCP ports")
+        print("  - vulnerability: Vulnerability detection")
+        print("  - web_discovery: Web service enumeration")
+        print("  - database_discovery: Database service detection")
         sys.exit(1)
     
-    print(f"\U0001f680 Starting advanced network scan...")
-    print(f"\U0001f3af Target: {args.targets}")
-    print(f"\U0001f4ca Scan Type: {args.type}")
-    print(f"\u26a1 Timing: T{args.timing}")
+    target = sys.argv[1]
+    scan_type = sys.argv[2] if len(sys.argv) > 2 else "quick"
+    
+    scanner = NetworkScanner()
+    
+    print(f"\n{Fore.CYAN}🚀 Network Scanner - Live Progress Edition{Style.RESET_ALL}")
     print("=" * 60)
     
-    result = scanner.scan_network(args.targets, args.type, args.timing)
-    
-    if result:
-        print("\n" + "=" * 60)
-        print("\U0001f389 Scan completed! Next steps:")
-        print(f"1. Parse results: python3 scripts/parsing/xml_parser.py {result}")
-        print(f"2. Generate report: python3 scripts/reporting/report_generator.py {result}")
-        print(f"3. Or run full pipeline: python3 pipeline.py --xml-file {result}")
-        print("=" * 60)
-    else:
-        print("\u274c Scan failed. Check error messages above.")
+    # Check if running as root for certain scan types
+    root_required = ["udp_top", "stealth_scan", "udp_scan"]
+    if scan_type in root_required and os.geteuid() != 0:
+        print(f"{Fore.RED}❌ Error: {scan_type} requires root privileges{Style.RESET_ALL}")
+        print("Please run with sudo")
         sys.exit(1)
+    
+    # Perform scan
+    xml_file = scanner.scan_network(target, scan_type)
+    
+    if xml_file:
+        print(f"\n{Fore.GREEN}✨ Scan completed! Check the results in:{Style.RESET_ALL}")
+        print(f"   {xml_file}")
 
 if __name__ == "__main__":
     main()

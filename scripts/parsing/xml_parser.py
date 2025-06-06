@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Nmap XML Parser
+Nmap XML Parser with CSV Export and Diff Support
 Extracts actionable insights from nmap XML output files
 """
 
@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 import ipaddress
+from datetime import datetime
+import hashlib
 
 class NmapXMLParser:
     def __init__(self):
@@ -28,6 +30,7 @@ class NmapXMLParser:
             'service_versions': {},
             'os_distribution': defaultdict(int)
         }
+        self.scan_metadata = {}
     
     def parse_xml(self, xml_file):
         """Parse nmap XML file and extract all relevant information"""
@@ -46,8 +49,12 @@ class NmapXMLParser:
             'scanner': root.get('scanner', 'nmap'),
             'version': root.get('version', 'unknown'),
             'start_time': root.get('startstr', 'unknown'),
-            'command_line': root.get('args', 'unknown')
+            'command_line': root.get('args', 'unknown'),
+            'scan_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
+        
+        # Extract target info from command line
+        self._extract_target_info()
         
         # Parse each host
         for host in root.findall('host'):
@@ -57,6 +64,40 @@ class NmapXMLParser:
         
         self._generate_insights()
         return True
+    
+    def _extract_target_info(self):
+        """Extract target information from command line"""
+        cmd = self.scan_info.get('command_line', '')
+        # Simple extraction - look for IP addresses or networks
+        import re
+        
+        # Match IP addresses and CIDR notation
+        ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?\b'
+        matches = re.findall(ip_pattern, cmd)
+        
+        if matches:
+            self.scan_metadata['target'] = matches[-1]  # Last IP/network in command
+        else:
+            # Try to find hostname
+            parts = cmd.split()
+            for part in reversed(parts):
+                if not part.startswith('-') and '.' in part:
+                    self.scan_metadata['target'] = part
+                    break
+            else:
+                self.scan_metadata['target'] = 'unknown'
+        
+        # Extract scan type
+        if '-F' in cmd:
+            self.scan_metadata['scan_type'] = 'quick'
+        elif '-p-' in cmd:
+            self.scan_metadata['scan_type'] = 'full_tcp'
+        elif '--script=vuln' in cmd:
+            self.scan_metadata['scan_type'] = 'vulnerability'
+        elif '-sU' in cmd:
+            self.scan_metadata['scan_type'] = 'udp'
+        else:
+            self.scan_metadata['scan_type'] = 'comprehensive'
     
     def _parse_host(self, host_elem):
         """Parse individual host information"""
@@ -71,7 +112,8 @@ class NmapXMLParser:
             'hostnames': [],
             'ports': [],
             'os': {},
-            'uptime': None
+            'uptime': None,
+            'scripts': {}  # Store script results
         }
         
         # Extract addresses
@@ -110,12 +152,18 @@ class NmapXMLParser:
                 'lastboot': uptime_elem.get('lastboot')
             }
         
+        # Extract host scripts
+        for script in host_elem.findall('script'):
+            script_id = script.get('id')
+            script_output = script.get('output', '')
+            host_data['scripts'][script_id] = script_output
+        
         return host_data
     
     def _parse_port(self, port_elem):
-        """Parse port information"""
+        """Parse port information including scripts"""
         state_elem = port_elem.find('state')
-        if state_elem is None or state_elem.get('state') != 'open':
+        if state_elem is None:
             return None
         
         port_data = {
@@ -123,7 +171,8 @@ class NmapXMLParser:
             'protocol': port_elem.get('protocol'),
             'state': state_elem.get('state'),
             'reason': state_elem.get('reason'),
-            'service': {}
+            'service': {},
+            'scripts': {}  # Store port-specific scripts
         }
         
         # Extract service information
@@ -136,8 +185,19 @@ class NmapXMLParser:
                 'extrainfo': service_elem.get('extrainfo', ''),
                 'ostype': service_elem.get('ostype', ''),
                 'method': service_elem.get('method', ''),
-                'conf': service_elem.get('conf', '')
+                'conf': service_elem.get('conf', ''),
+                'cpe': []  # Store CPE entries
             }
+            
+            # Extract CPE entries
+            for cpe in service_elem.findall('cpe'):
+                port_data['service']['cpe'].append(cpe.text)
+        
+        # Extract port scripts
+        for script in port_elem.findall('script'):
+            script_id = script.get('id')
+            script_output = script.get('output', '')
+            port_data['scripts'][script_id] = script_output
         
         return port_data
     
@@ -160,8 +220,14 @@ class NmapXMLParser:
                     'vendor': osclass.get('vendor'),
                     'osfamily': osclass.get('osfamily'),
                     'osgen': osclass.get('osgen'),
-                    'accuracy': int(osclass.get('accuracy', 0))
+                    'accuracy': int(osclass.get('accuracy', 0)),
+                    'cpe': []
                 }
+                
+                # Extract CPE entries
+                for cpe in osclass.findall('cpe'):
+                    class_data['cpe'].append(cpe.text)
+                
                 match_data['classes'].append(class_data)
             
             os_data['matches'].append(match_data)
@@ -259,9 +325,10 @@ class NmapXMLParser:
             })
     
     def export_to_json(self, output_file):
-        """Export parsed data to JSON"""
+        """Export parsed data to JSON with metadata"""
         data = {
             'scan_info': self.scan_info,
+            'scan_metadata': self.scan_metadata,
             'hosts': self.hosts,
             'insights': self.insights
         }
@@ -271,12 +338,74 @@ class NmapXMLParser:
         
         print(f"Data exported to JSON: {output_file}")
     
-    def export_to_csv(self, output_dir):
-        """Export parsed data to CSV files"""
+    def export_to_csv(self, output_dir, detailed=True):
+        """Export parsed data to CSV files with detailed port information"""
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Export hosts summary
+        if detailed:
+            # Detailed CSV with all columns requested
+            detailed_file = output_dir / "scan_detailed.csv"
+            with open(detailed_file, 'w', newline='', encoding='utf-8') as f:
+                fieldnames = [
+                    'ip', 'hostname', 'port', 'protocol', 'state', 
+                    'service', 'product', 'version', 'cpe', 
+                    'script_id', 'script_output'
+                ]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                
+                for host in self.hosts:
+                    ip = host['addresses'].get('ipv4', host['addresses'].get('ipv6', 'unknown'))
+                    hostname = host['hostnames'][0]['name'] if host['hostnames'] else ''
+                    
+                    # Write host-level scripts
+                    if host.get('scripts'):
+                        for script_id, script_output in host['scripts'].items():
+                            writer.writerow({
+                                'ip': ip,
+                                'hostname': hostname,
+                                'port': 'host',
+                                'protocol': 'host',
+                                'state': 'up',
+                                'service': 'host-script',
+                                'product': '',
+                                'version': '',
+                                'cpe': '',
+                                'script_id': script_id,
+                                'script_output': script_output[:500]  # Limit output length
+                            })
+                    
+                    # Write port information
+                    for port in host['ports']:
+                        base_row = {
+                            'ip': ip,
+                            'hostname': hostname,
+                            'port': port['port'],
+                            'protocol': port['protocol'],
+                            'state': port['state'],
+                            'service': port['service'].get('name', ''),
+                            'product': port['service'].get('product', ''),
+                            'version': port['service'].get('version', ''),
+                            'cpe': '|'.join(port['service'].get('cpe', []))
+                        }
+                        
+                        # If port has scripts, write one row per script
+                        if port.get('scripts'):
+                            for script_id, script_output in port['scripts'].items():
+                                row = base_row.copy()
+                                row['script_id'] = script_id
+                                row['script_output'] = script_output[:500]
+                                writer.writerow(row)
+                        else:
+                            # No scripts, write base row
+                            base_row['script_id'] = ''
+                            base_row['script_output'] = ''
+                            writer.writerow(base_row)
+            
+            print(f"📊 Detailed CSV exported to: {detailed_file}")
+        
+        # Also export summary CSVs as before
         hosts_file = output_dir / "hosts_summary.csv"
         with open(hosts_file, 'w', newline='') as f:
             writer = csv.writer(f)
@@ -295,34 +424,26 @@ class NmapXMLParser:
                 
                 writer.writerow([ip, hostname, os_name, ','.join(open_ports), ','.join(services)])
         
-        # Export detailed port information
-        ports_file = output_dir / "ports_detailed.csv"
-        with open(ports_file, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['IP', 'Port', 'Protocol', 'Service', 'Version', 'Product'])
-            
-            for host in self.hosts:
-                ip = host['addresses'].get('ipv4', host['addresses'].get('ipv6', 'unknown'))
-                for port in host['ports']:
-                    if port['state'] == 'open':
-                        writer.writerow([
-                            ip, port['port'], port['protocol'],
-                            port['service'].get('name', ''),
-                            port['service'].get('version', ''),
-                            port['service'].get('product', '')
-                        ])
-        
-        print(f"CSV files exported to: {output_dir}")
+        print(f"📊 Summary CSV exported to: {hosts_file}")
+
+def generate_scan_id(target, scan_type):
+    """Generate a unique scan ID based on target and type"""
+    # Create a short hash of the target for readability
+    target_hash = hashlib.md5(target.encode()).hexdigest()[:8]
+    return f"{scan_type}_{target_hash}"
 
 def main():
-    parser = argparse.ArgumentParser(description="Parse Nmap XML results")
+    parser = argparse.ArgumentParser(description="Parse Nmap XML results with CSV support")
     parser.add_argument("xml_file", help="Path to nmap XML file")
     parser.add_argument("-o", "--output", default="output/processed",
                        help="Output directory")
-    parser.add_argument("--format", choices=["json", "csv", "both"], default="both",
-                       help="Output format")
+    parser.add_argument("--format", default="json,csv",
+                       help="Output format(s) - comma separated: json,csv,text,html")
     
     args = parser.parse_args()
+    
+    # Parse formats
+    formats = [f.strip().lower() for f in args.format.split(',')]
     
     # Create output directory
     output_dir = Path(args.output)
@@ -333,31 +454,31 @@ def main():
     if not parser_obj.parse_xml(args.xml_file):
         sys.exit(1)
     
-    # Generate output filename base
-    xml_path = Path(args.xml_file)
-    base_name = xml_path.stem
+    # Generate output filename with timestamp and scan ID
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    target = parser_obj.scan_metadata.get('target', 'unknown')
+    scan_type = parser_obj.scan_metadata.get('scan_type', 'scan')
+    scan_id = generate_scan_id(target, scan_type)
     
-    # Export data
-    if args.format in ["json", "both"]:
-        json_file = output_dir / f"{base_name}_parsed.json"
+    base_name = f"{timestamp}_{scan_id}"
+    
+    # Export to requested formats
+    if 'json' in formats:
+        json_file = output_dir / f"{base_name}.json"
         parser_obj.export_to_json(json_file)
     
-    if args.format in ["csv", "both"]:
+    if 'csv' in formats:
         csv_dir = output_dir / f"{base_name}_csv"
-        parser_obj.export_to_csv(csv_dir)
-        
-        # Also organize CSVs in reports directory
-        reports_csv_dir = Path("output/reports/csv") / base_name
-        reports_csv_dir.mkdir(parents=True, exist_ok=True)
-        
-        import shutil
-        if csv_dir.exists():
-            for csv_file in csv_dir.glob("*.csv"):
-                shutil.copy2(csv_file, reports_csv_dir / csv_file.name)
-            print(f"📊 CSV files also copied to: {reports_csv_dir}")
+        parser_obj.export_to_csv(csv_dir, detailed=True)
+    
+    # Note: text and html formats would be handled by report_generator.py
+    if 'text' in formats or 'html' in formats:
+        print("Note: For text/html reports, use report_generator.py with the JSON output")
     
     # Print summary
     print(f"\nScan Summary:")
+    print(f"Target: {target}")
+    print(f"Scan Type: {scan_type}")
     print(f"Total hosts scanned: {parser_obj.insights['total_hosts']}")
     print(f"Hosts up: {parser_obj.insights['hosts_up']}")
     print(f"Total open ports: {parser_obj.insights['total_open_ports']}")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Enhanced Network Scan Report Generator
-Creates interactive HTML and text reports with real-time features
+Creates interactive HTML, text, and CSV reports with real-time features
 """
 
 import json
@@ -20,10 +20,14 @@ import time
 import threading
 
 class ReportGenerator:
-    def __init__(self):
+    def __init__(self, json_file=None):
         self.data = None
         self.template_dir = Path("templates")
         self.template_dir.mkdir(exist_ok=True)
+        
+        # If json_file provided in constructor, load it
+        if json_file:
+            self.load_data(json_file)
         
     def load_data(self, json_file):
         """Load parsed nmap data from JSON file"""
@@ -37,6 +41,230 @@ class ReportGenerator:
         except json.JSONDecodeError as e:
             print(f"❌ Error parsing JSON: {e}")
             return False
+    
+    def generate_reports(self, report_format, timestamp, no_open=False):
+        """Generate reports in specified format(s)"""
+        if not self.data:
+            print("❌ No data loaded")
+            return []
+        
+        generated_files = []
+        output_dir = Path("output/reports")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Get base filename from scan data
+        scan_type = self.data.get('scan_metadata', {}).get('scan_type', 'scan')
+        base_filename = f"scan_{scan_type}_report_{timestamp}"
+        
+        # Generate reports based on format
+        if report_format in ['html', 'all']:
+            html_file = output_dir / f"{base_filename}.html"
+            if self.generate_html_report(html_file, auto_open=(not no_open)):
+                generated_files.append(str(html_file))
+        
+        if report_format in ['text', 'all']:
+            text_file = output_dir / f"{base_filename}.txt"
+            if self.generate_text_report(text_file):
+                generated_files.append(str(text_file))
+        
+        if report_format in ['csv', 'all']:
+            csv_file = output_dir / f"{base_filename}.csv"
+            if self.generate_csv_report(csv_file):
+                generated_files.append(str(csv_file))
+        
+        return generated_files
+    
+    def generate_csv_report(self, output_file):
+        """Generate CSV report with scan results"""
+        if not self.data:
+            print("❌ No data loaded")
+            return False
+        
+        try:
+            with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+                # Define CSV fields
+                fieldnames = [
+                    'ip_address', 'hostname', 'state', 'os', 'os_accuracy',
+                    'port', 'protocol', 'service', 'product', 'version',
+                    'severity', 'issue', 'risk_score'
+                ]
+                
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                
+                # Process each host
+                for host in self.data['hosts']:
+                    ip = host['addresses'].get('ipv4', host['addresses'].get('ipv6', 'unknown'))
+                    hostname = host['hostnames'][0]['name'] if host['hostnames'] else ''
+                    state = host.get('state', 'up')
+                    
+                    # Get OS info
+                    os_name = ''
+                    os_accuracy = 0
+                    if host['os'].get('matches'):
+                        best_os = max(host['os']['matches'], key=lambda x: x['accuracy'])
+                        os_name = best_os['name']
+                        os_accuracy = best_os['accuracy']
+                    
+                    # Get open ports
+                    open_ports = [p for p in host['ports'] if p['state'] == 'open']
+                    
+                    if open_ports:
+                        # Write one row per port
+                        for port in open_ports:
+                            # Find any security issues for this port
+                            issues = []
+                            for issue in self.data['insights']['potential_issues']:
+                                if issue['host'] == ip and issue['port'] == port['port']:
+                                    issues.append(issue)
+                            
+                            if issues:
+                                # Write one row per issue
+                                for issue in issues:
+                                    writer.writerow({
+                                        'ip_address': ip,
+                                        'hostname': hostname,
+                                        'state': state,
+                                        'os': os_name,
+                                        'os_accuracy': os_accuracy,
+                                        'port': port['port'],
+                                        'protocol': port['protocol'],
+                                        'service': port['service'].get('name', 'unknown'),
+                                        'product': port['service'].get('product', ''),
+                                        'version': port['service'].get('version', ''),
+                                        'severity': issue['severity'],
+                                        'issue': issue['issue'],
+                                        'risk_score': self._calculate_port_risk_score(port, issue)
+                                    })
+                            else:
+                                # No issues for this port
+                                writer.writerow({
+                                    'ip_address': ip,
+                                    'hostname': hostname,
+                                    'state': state,
+                                    'os': os_name,
+                                    'os_accuracy': os_accuracy,
+                                    'port': port['port'],
+                                    'protocol': port['protocol'],
+                                    'service': port['service'].get('name', 'unknown'),
+                                    'product': port['service'].get('product', ''),
+                                    'version': port['service'].get('version', ''),
+                                    'severity': '',
+                                    'issue': '',
+                                    'risk_score': self._calculate_port_risk_score(port, None)
+                                })
+                    else:
+                        # Host with no open ports
+                        writer.writerow({
+                            'ip_address': ip,
+                            'hostname': hostname,
+                            'state': state,
+                            'os': os_name,
+                            'os_accuracy': os_accuracy,
+                            'port': '',
+                            'protocol': '',
+                            'service': '',
+                            'product': '',
+                            'version': '',
+                            'severity': '',
+                            'issue': '',
+                            'risk_score': 0
+                        })
+                
+                # Add summary rows at the end
+                writer.writerow({})  # Empty row
+                writer.writerow({
+                    'ip_address': 'SUMMARY',
+                    'hostname': f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    'state': '',
+                    'os': '',
+                    'os_accuracy': '',
+                    'port': '',
+                    'protocol': '',
+                    'service': '',
+                    'product': '',
+                    'version': '',
+                    'severity': '',
+                    'issue': '',
+                    'risk_score': ''
+                })
+                
+                insights = self.data['insights']
+                writer.writerow({
+                    'ip_address': 'Total Hosts',
+                    'hostname': str(insights['total_hosts']),
+                    'state': 'Hosts Up',
+                    'os': str(insights['hosts_up']),
+                    'os_accuracy': '',
+                    'port': 'Open Ports',
+                    'protocol': str(insights['total_open_ports']),
+                    'service': 'Security Issues',
+                    'product': str(len(insights['potential_issues'])),
+                    'version': '',
+                    'severity': '',
+                    'issue': '',
+                    'risk_score': ''
+                })
+            
+            print(f"✅ CSV report generated: {output_file}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error generating CSV report: {e}")
+            return False
+    
+    def _calculate_port_risk_score(self, port, issue=None):
+        """Calculate risk score for a port/service"""
+        score = 0
+        
+        # Base score by port number
+        risky_ports = {
+            21: 30,    # FTP
+            22: 5,     # SSH (low risk if properly secured)
+            23: 50,    # Telnet
+            25: 20,    # SMTP
+            53: 10,    # DNS
+            80: 15,    # HTTP
+            110: 20,   # POP3
+            111: 25,   # RPC
+            135: 30,   # Windows RPC
+            139: 30,   # NetBIOS
+            143: 20,   # IMAP
+            443: 5,    # HTTPS (low risk)
+            445: 35,   # SMB
+            1433: 40,  # MSSQL
+            3306: 40,  # MySQL
+            3389: 30,  # RDP
+            5432: 40,  # PostgreSQL
+            5900: 35,  # VNC
+            8080: 15,  # HTTP Alt
+            8443: 5,   # HTTPS Alt
+        }
+        
+        score += risky_ports.get(port['port'], 10)
+        
+        # Adjust by service
+        service_name = port['service'].get('name', '').lower()
+        if 'telnet' in service_name:
+            score += 40
+        elif 'ftp' in service_name:
+            score += 20
+        elif 'vnc' in service_name:
+            score += 30
+        elif 'smb' in service_name or 'netbios' in service_name:
+            score += 20
+        elif 'http' in service_name and 'https' not in service_name:
+            score += 10
+        
+        # Add issue severity if present
+        if issue:
+            if issue['severity'] == 'high':
+                score += 50
+            elif issue['severity'] == 'medium':
+                score += 25
+        
+        # Cap at 100
+        return min(score, 100)
     
     def open_report(self, filepath):
         """Cross-platform method to open HTML report in default browser"""
@@ -268,9 +496,17 @@ class ReportGenerator:
         elif '-p-' in command:
             scan_type = 'full_tcp'
         elif '-sU' in command:
-            scan_type = 'udp_top'
-        elif '-sn' in command:
-            scan_type = 'discovery'
+            scan_type = 'udp_scan'
+        elif '--script=vuln' in command:
+            scan_type = 'vulnerability_scan'
+        elif 'http-*' in command:
+            scan_type = 'web_discovery'
+        elif '*sql*' in command or '*db*' in command:
+            scan_type = 'database_discovery'
+        elif '-sS' in command:
+            scan_type = 'stealth_scan'
+        elif 'everything' in command or 'vuln,http' in command:
+            scan_type = 'everything_with_vuln'
         
         # Extract target from hosts
         targets = []
@@ -288,6 +524,12 @@ class ReportGenerator:
                 target = first_ip
         else:
             target = "unknown"
+        
+        # Also get from scan_metadata if available
+        if 'scan_metadata' in self.data and 'target' in self.data['scan_metadata']:
+            target = self.data['scan_metadata']['target']
+        if 'scan_metadata' in self.data and 'scan_type' in self.data['scan_metadata']:
+            scan_type = self.data['scan_metadata']['scan_type']
         
         return {
             'scan_type': scan_type,
@@ -424,7 +666,8 @@ class ReportGenerator:
             'total_issues': len(insights['potential_issues']),
             'risk_score': risk_score,
             'categorized_issues': categorized_issues,
-            'recommendations': self._generate_recommendations(insights)
+            'recommendations': self._generate_recommendations(insights),
+            'scan_metadata': self._extract_scan_metadata()  # Add this line
         }
     
     def _calculate_risk_score(self, insights):
@@ -993,7 +1236,7 @@ class ReportGenerator:
                 <div class="summary-card success">
                     <h3>Hosts Online</h3>
                     <div class="value">{{ insights.hosts_up }}</div>
-                    <div class="subtitle">{{ ((insights.hosts_up / insights.total_hosts * 100) | round(1)) }}% response rate</div>
+                    <div class="subtitle">{{ ((insights.hosts_up / insights.total_hosts * 100) | round(1)) if insights.total_hosts > 0 else 0 }}% response rate</div>
                 </div>
                 <div class="summary-card info">
                     <h3>Open Ports</h3>
@@ -1055,8 +1298,8 @@ class ReportGenerator:
                                 <span>{{ count }}</span>
                             </div>
                             <div class="chart-progress">
-                                <div class="chart-fill" style="width: {{ (count / service_stats[0][1] * 100) }}%">
-                                    {{ ((count / insights.total_open_ports * 100) | round(1)) }}%
+                                <div class="chart-fill" style="width: {{ (count / service_stats[0][1] * 100) if service_stats[0][1] > 0 else 0 }}%">
+                                    {{ ((count / insights.total_open_ports * 100) | round(1)) if insights.total_open_ports > 0 else 0 }}%
                                 </div>
                             </div>
                         </div>
@@ -1072,8 +1315,8 @@ class ReportGenerator:
                                 <span>{{ count }} hosts</span>
                             </div>
                             <div class="chart-progress">
-                                <div class="chart-fill" style="width: {{ (count / port_stats[0][1] * 100) }}%">
-                                    {{ ((count / insights.hosts_up * 100) | round(1)) }}%
+                                <div class="chart-fill" style="width: {{ (count / port_stats[0][1] * 100) if port_stats[0][1] > 0 else 0 }}%">
+                                    {{ ((count / insights.hosts_up * 100) | round(1)) if insights.hosts_up > 0 else 0 }}%
                                 </div>
                             </div>
                         </div>
@@ -1091,8 +1334,8 @@ class ReportGenerator:
                             <span>{{ count }} hosts</span>
                         </div>
                         <div class="chart-progress">
-                            <div class="chart-fill" style="width: {{ (count / insights.hosts_up * 100) }}%">
-                                {{ ((count / insights.hosts_up * 100) | round(1)) }}%
+                            <div class="chart-fill" style="width: {{ (count / insights.hosts_up * 100) if insights.hosts_up > 0 else 0 }}%">
+                                {{ ((count / insights.hosts_up * 100) | round(1)) if insights.hosts_up > 0 else 0 }}%
                             </div>
                         </div>
                     </div>
@@ -1238,7 +1481,7 @@ def main():
     parser.add_argument("json_file", help="Path to parsed JSON file")
     parser.add_argument("-o", "--output", default="output/reports",
                        help="Output directory")
-    parser.add_argument("--format", choices=["html", "text", "both"], default="both",
+    parser.add_argument("--format", choices=["html", "text", "csv", "all"], default="all",
                        help="Report format")
     parser.add_argument("--no-open", action="store_true",
                        help="Don't auto-open HTML report")
@@ -1268,15 +1511,20 @@ def main():
     
     success = True
     
-    if args.format in ["html", "both"]:
+    if args.format in ["html", "all"]:
         show_progress_animation("Generating HTML report", 1.5)
         html_file = output_dir / f"{base_name}_report_{timestamp}.html"
         success = generator.generate_html_report(html_file, auto_open=not args.no_open)
     
-    if args.format in ["text", "both"]:
+    if args.format in ["text", "all"]:
         show_progress_animation("Generating text report", 1)
         text_file = output_dir / f"{base_name}_report_{timestamp}.txt"
         success = success and generator.generate_text_report(text_file)
+    
+    if args.format in ["csv", "all"]:
+        show_progress_animation("Generating CSV report", 1)
+        csv_file = output_dir / f"{base_name}_report_{timestamp}.csv"
+        success = success and generator.generate_csv_report(csv_file)
     
     if success:
         print("\n" + "=" * 60)
