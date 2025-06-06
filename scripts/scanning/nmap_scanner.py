@@ -61,6 +61,11 @@ class NetworkScanner:
                 "description": "Top 1000 UDP ports with service detection (requires root for UDP)",
                 "estimated_time": "10-20 minutes"
             },
+            "udp_scan": {
+                "arguments": f"-T{timing} -sU --top-ports 100 -sV",
+                "description": "UDP port scan for top 100 ports (requires root)",
+                "estimated_time": "10-20 minutes"
+            },
             "discovery": {
                 "arguments": f"-T{timing} -sn",
                 "description": "Host discovery only - ping sweep",
@@ -86,6 +91,11 @@ class NetworkScanner:
                 "description": "Stealth comprehensive scan with fragmentation (requires root)",
                 "estimated_time": "10-20 minutes"
             },
+            "stealth_scan": {
+                "arguments": f"-T2 -sS -sV -f --randomize-hosts --source-port 443",
+                "description": "Stealthy half-open scan (requires root)",
+                "estimated_time": "5-10 minutes"
+            },
             "web_discovery": {
                 "arguments": f"-T{timing} -sT -sV --script=http-*,ssl-*,tls-* -p 80,443,8080,8443,8000,8888,9000",
                 "description": "Web application and SSL/TLS discovery",
@@ -100,6 +110,21 @@ class NetworkScanner:
                 "arguments": f"-T{timing} -sT -sV --script=smb-*,netbios-* -p 135,139,445,137",
                 "description": "SMB/NetBIOS discovery and enumeration",
                 "estimated_time": "3-7 minutes"
+            },
+            "everything_novuln": {
+                "arguments": f"-T{timing} -sT -sV -A -p- --script=default,discovery,safe,http-*,ssl-*,*sql*,*db*",
+                "description": "Complete scan: Discovery + Quick + Comprehensive + Full TCP + Web + DB",
+                "estimated_time": "20-40 minutes"
+            },
+            "everything_withvuln": {
+                "arguments": f"-T{timing} -sT -sV -A -p- --script=default,discovery,safe,vuln,http-*,ssl-*,*sql*,*db*",
+                "description": "Ultimate scan: Everything + Vulnerability detection",
+                "estimated_time": "30-60 minutes"
+            },
+            "top_1000_intense": {
+                "arguments": f"-T4 -sT -sV -A --top-ports 1000 --version-intensity 9",
+                "description": "Top 1000 ports with aggressive service detection",
+                "estimated_time": "5-10 minutes"
             },
             "max_intensity": {
                 "arguments": f"-T{timing} -sS -sU -sV -O -A --script=all --version-intensity 9 -p- --min-rate 1000",
@@ -129,11 +154,11 @@ class NetworkScanner:
         config = scan_configs[scan_type]
         output_file = self.output_dir / f"scan_{scan_type}_{timestamp}.xml"
         
-        print(f"🎯 Starting {config['description']}...")
-        print(f"📡 Target: {targets}")
-        print(f"⚙️  Arguments: {config['arguments']}")
-        print(f"⏱️  Estimated time: {config['estimated_time']}")
-        print(f"📁 Output: {output_file}")
+        print(f"\U0001f3af Starting {config['description']}...")
+        print(f"\U0001f4e1 Target: {targets}")
+        print(f"\u2699\ufe0f  Arguments: {config['arguments']}")
+        print(f"\u23f1\ufe0f  Estimated time: {config['estimated_time']}")
+        print(f"\U0001f4c1 Output: {output_file}")
         print("=" * 60)
         
         try:
@@ -185,18 +210,18 @@ class NetworkScanner:
             with open(summary_file, 'w') as f:
                 json.dump(scan_summary, f, indent=2)
                 
-            print("✅ Scan completed successfully!")
-            print(f"📊 Results Summary:")
-            print(f"   • Hosts up: {len(hosts_up)}/{len(self.nm.all_hosts())}")
-            print(f"   • Open ports found: {open_ports}")
-            print(f"   • Total ports scanned: {total_ports}")
-            print(f"📁 Results saved to: {output_file}")
-            print(f"📋 Summary saved to: {summary_file}")
+            print("\u2705 Scan completed successfully!")
+            print(f"\U0001f4ca Results Summary:")
+            print(f"   \u2022 Hosts up: {len(hosts_up)}/{len(self.nm.all_hosts())}")
+            print(f"   \u2022 Open ports found: {open_ports}")
+            print(f"   \u2022 Total ports scanned: {total_ports}")
+            print(f"\U0001f4c1 Results saved to: {output_file}")
+            print(f"\U0001f4cb Summary saved to: {summary_file}")
             
             return output_file
             
         except Exception as e:
-            print(f"❌ Scan failed: {str(e)}")
+            print(f"\u274c Scan failed: {str(e)}")
             return None
     
     def get_recommended_scan_sequence(self, target_type="network"):
@@ -241,10 +266,11 @@ def main():
     parser = argparse.ArgumentParser(description="Advanced Network Scanner with Comprehensive Analysis")
     parser.add_argument("targets", help="Target IP range (e.g., 192.168.1.0/24) or single IP")
     parser.add_argument("-t", "--type", default="comprehensive", 
-                       choices=["quick", "comprehensive", "comprehensive_root", "full_tcp", "full_tcp_root", "udp_top", "discovery",
-                               "full_comprehensive", "full_comprehensive_root", "vulnerability_scan", "stealth_comprehensive",
-                               "web_discovery", "database_discovery", "smb_discovery", 
-                               "max_intensity", "max_intensity_noroot", "custom_ports"],
+                       choices=["quick", "comprehensive", "comprehensive_root", "full_tcp", "full_tcp_root", 
+                               "udp_top", "udp_scan", "discovery", "full_comprehensive", "full_comprehensive_root", 
+                               "vulnerability_scan", "stealth_comprehensive", "stealth_scan", "web_discovery", 
+                               "database_discovery", "smb_discovery", "everything_novuln", "everything_withvuln",
+                               "top_1000_intense", "max_intensity", "max_intensity_noroot", "custom_ports"],
                        help="Scan type")
     parser.add_argument("-T", "--timing", type=int, default=3, choices=range(0, 6),
                        help="Timing template (0=paranoid, 1=sneaky, 2=polite, 3=normal, 4=aggressive, 5=insane)")
@@ -262,7 +288,7 @@ def main():
     
     # Handle special arguments
     if args.list_scans:
-        print("🔍 Available Scan Types:")
+        print("\U0001f50d Available Scan Types:")
         print("=" * 80)
         scan_configs = {
             "quick": "Quick scan - top 100 ports (1-2 min)",
@@ -271,35 +297,43 @@ def main():
             "full_tcp": "All TCP ports, no root (15-30 min)",
             "full_tcp_root": "All TCP ports with SYN stealth, needs root (15-30 min)", 
             "udp_top": "Top 1000 UDP ports, needs root (10-20 min)",
+            "udp_scan": "UDP scan top 100 ports, needs root (10-20 min)",
             "discovery": "Host discovery only (30 sec - 2 min)",
             "full_comprehensive": "Complete TCP scan, no root (20-45 min)",
             "full_comprehensive_root": "Complete TCP/UDP scan, needs root (20-45 min)",
             "vulnerability_scan": "Vulnerability detection, no root (15-25 min)",
+            "stealth_comprehensive": "Stealth comprehensive scan, needs root (10-20 min)",
+            "stealth_scan": "Stealthy SYN scan, needs root (5-10 min)",
             "web_discovery": "Web application discovery (5-10 min)",
             "database_discovery": "Database service enumeration (3-8 min)",
             "smb_discovery": "SMB/NetBIOS discovery (3-7 min)",
+            "everything_novuln": "Everything scan without vulnerability (20-40 min)",
+            "everything_withvuln": "Everything scan with vulnerability (30-60 min)",
+            "top_1000_intense": "Top 1000 ports intensive scan (5-10 min)",
             "max_intensity": "Maximum intensity, needs root (45-120 min)",
             "max_intensity_noroot": "Maximum intensity, no root needed (25-60 min)",
             "custom_ports": "Custom port range scan"
         }
         
-        print("🟢 NO ROOT REQUIRED:")
+        print("\U0001f7e2 NO ROOT REQUIRED:")
         no_root_scans = ["quick", "comprehensive", "full_tcp", "discovery", "full_comprehensive", 
                         "vulnerability_scan", "web_discovery", "database_discovery", "smb_discovery", 
+                        "everything_novuln", "everything_withvuln", "top_1000_intense",
                         "max_intensity_noroot", "custom_ports"]
         for scan in no_root_scans:
-            print(f"  {scan:<25} - {scan_configs[scan]}")
+            if scan in scan_configs:
+                print(f"  {scan:<25} - {scan_configs[scan]}")
             
-        print("\n🔴 ROOT REQUIRED:")
-        root_scans = ["comprehensive_root", "full_tcp_root", "udp_top", "full_comprehensive_root", 
-                     "stealth_comprehensive", "max_intensity"]
+        print("\n\U0001f534 ROOT REQUIRED:")
+        root_scans = ["comprehensive_root", "full_tcp_root", "udp_top", "udp_scan", 
+                     "full_comprehensive_root", "stealth_comprehensive", "stealth_scan", "max_intensity"]
         for scan in root_scans:
             if scan in scan_configs:
                 print(f"  {scan:<25} - {scan_configs[scan]}")
         return
     
     if args.sequence:
-        print(f"🎯 Recommended scan sequence for {args.sequence} analysis:")
+        print(f"\U0001f3af Recommended scan sequence for {args.sequence} analysis:")
         print("=" * 60)
         sequence = scanner.get_recommended_scan_sequence(args.sequence)
         for i, (scan_type, description) in enumerate(sequence, 1):
@@ -310,17 +344,21 @@ def main():
         return
     
     # Check if running as root and recommend alternatives
-    root_required_scans = ["comprehensive_root", "full_tcp_root", "udp_top", "full_comprehensive_root", 
-                          "vulnerability_scan", "stealth_comprehensive", "max_intensity"]
+    root_required_scans = ["comprehensive_root", "full_tcp_root", "udp_top", "udp_scan",
+                          "full_comprehensive_root", "stealth_comprehensive", "stealth_scan", "max_intensity"]
     
     if args.type in root_required_scans and os.geteuid() != 0:
-        print("⚠️  Warning: This scan type requires root privileges")
+        print("\u26a0\ufe0f  Warning: This scan type requires root privileges")
         print("   Consider these alternatives that don't need root:")
         alternatives = {
             "comprehensive_root": "comprehensive",
             "full_tcp_root": "full_tcp", 
             "full_comprehensive_root": "full_comprehensive",
-            "max_intensity": "max_intensity_noroot"
+            "max_intensity": "max_intensity_noroot",
+            "udp_top": "top_1000_intense",
+            "udp_scan": "top_1000_intense",
+            "stealth_scan": "comprehensive",
+            "stealth_comprehensive": "comprehensive"
         }
         if args.type in alternatives:
             alt = alternatives[args.type]
@@ -329,27 +367,27 @@ def main():
     
     # Handle custom ports
     if args.type == "custom_ports" and not args.ports:
-        print("❌ Error: --ports argument required for custom_ports scan type")
+        print("\u274c Error: --ports argument required for custom_ports scan type")
         print("   Example: --ports 22,80,443,8080-8090")
         sys.exit(1)
     
-    print(f"🚀 Starting advanced network scan...")
-    print(f"🎯 Target: {args.targets}")
-    print(f"📊 Scan Type: {args.type}")
-    print(f"⚡ Timing: T{args.timing}")
+    print(f"\U0001f680 Starting advanced network scan...")
+    print(f"\U0001f3af Target: {args.targets}")
+    print(f"\U0001f4ca Scan Type: {args.type}")
+    print(f"\u26a1 Timing: T{args.timing}")
     print("=" * 60)
     
     result = scanner.scan_network(args.targets, args.type, args.timing)
     
     if result:
         print("\n" + "=" * 60)
-        print("🎉 Scan completed! Next steps:")
+        print("\U0001f389 Scan completed! Next steps:")
         print(f"1. Parse results: python3 scripts/parsing/xml_parser.py {result}")
         print(f"2. Generate report: python3 scripts/reporting/report_generator.py {result}")
         print(f"3. Or run full pipeline: python3 pipeline.py --xml-file {result}")
         print("=" * 60)
     else:
-        print("❌ Scan failed. Check error messages above.")
+        print("\u274c Scan failed. Check error messages above.")
         sys.exit(1)
 
 if __name__ == "__main__":
