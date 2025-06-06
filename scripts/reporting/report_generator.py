@@ -49,8 +49,19 @@ class ReportGenerator:
             return []
         
         generated_files = []
-        output_dir = Path("output/reports")
-        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create base output directory
+        base_output_dir = Path("output/reports")
+        base_output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create subdirectories for each file type
+        html_dir = base_output_dir / "html"
+        csv_dir = base_output_dir / "csv"
+        json_dir = base_output_dir / "json"
+        
+        html_dir.mkdir(parents=True, exist_ok=True)
+        csv_dir.mkdir(parents=True, exist_ok=True)
+        json_dir.mkdir(parents=True, exist_ok=True)
         
         # Get base filename from scan data
         scan_type = self.data.get('scan_metadata', {}).get('scan_type', 'scan')
@@ -58,17 +69,17 @@ class ReportGenerator:
         
         # Generate reports based on format
         if report_format in ['html', 'all']:
-            html_file = output_dir / f"{base_filename}.html"
+            html_file = html_dir / f"{base_filename}.html"
             if self.generate_html_report(html_file, auto_open=(not no_open)):
                 generated_files.append(str(html_file))
         
         if report_format in ['text', 'all']:
-            text_file = output_dir / f"{base_filename}.txt"
+            text_file = csv_dir / f"{base_filename}.txt"  # Text files go to csv directory
             if self.generate_text_report(text_file):
                 generated_files.append(str(text_file))
         
         if report_format in ['csv', 'all']:
-            csv_file = output_dir / f"{base_filename}.csv"
+            csv_file = csv_dir / f"{base_filename}.csv"
             if self.generate_csv_report(csv_file):
                 generated_files.append(str(csv_file))
         
