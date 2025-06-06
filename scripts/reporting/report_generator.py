@@ -964,7 +964,27 @@ class ReportGenerator:
             "has_topology": "network_topology" in self.data,
             "topology_stats": self.data.get("network_topology", {}).get("stats", {}),
             "subnet_analysis": self.data.get("subnet_analysis", {}),
+            "topology_file": self._find_latest_topology_file(),
         }
+    
+    def _find_latest_topology_file(self):
+        """Find the most recent topology HTML file"""
+        topo_dir = Path("output/topology")
+        if not topo_dir.exists():
+            return None
+        
+        # Find all topology HTML files
+        topology_files = list(topo_dir.glob("topology_*.html"))
+        if not topology_files:
+            return None
+        
+        # Get the most recent one
+        latest_file = max(topology_files, key=lambda p: p.stat().st_mtime)
+        
+        # Return relative path from report location
+        # Reports are in output/reports/html/, topology is in output/topology/
+        # So we need to go up 2 levels then into topology
+        return f"../../topology/{latest_file.name}"
 
     def _calculate_risk_score(self, insights):
         """Calculate overall network risk score"""
@@ -1794,53 +1814,57 @@ class ReportGenerator:
                 </div>
                 {% endfor %}
             </div>
-	    <!-- Network Topology Section -->
-{% if has_topology %}
-<div class="section">
-    <div class="section-title">🗺️ Network Topology</div>
-    
-    <div class="stats-container">
-        <div class="chart-container">
-            <h4>Network Segments</h4>
-            <div class="summary-grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="summary-card">
-                    <h3>Segments</h3>
-                    <div class="value">{{ topology_stats.segments|length }}</div>
+	    
+            <!-- Network Topology Section -->
+            {% if has_topology %}
+            <div class="section">
+                <div class="section-title">🗺️ Network Topology</div>
+                
+                <div class="stats-container">
+                    <div class="chart-container">
+                        <h4>Network Segments</h4>
+                        <div class="summary-grid" style="grid-template-columns: repeat(3, 1fr);">
+                            <div class="summary-card">
+                                <h3>Segments</h3>
+                                <div class="value">{{ topology_stats.segments|length }}</div>
+                            </div>
+                            <div class="summary-card">
+                                <h3>Subnets</h3>
+                                <div class="value">{{ topology_stats.total_subnets }}</div>
+                            </div>
+                            <div class="summary-card">
+                                <h3>Gateways</h3>
+                                <div class="value">{{ topology_stats.gateway_devices }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <h3>Subnets</h3>
-                    <div class="value">{{ topology_stats.total_subnets }}</div>
+                
+                {% if subnet_analysis.vlan_hints.potential_vlans %}
+                <div style="margin-top: 30px;">
+                    <h4>🏷️ Potential VLANs Detected</h4>
+                    {% for vlan in subnet_analysis.vlan_hints.potential_vlans %}
+                    <div class="alert alert-info" style="background: #e3f2fd; border: 1px solid #2196f3; color: #1565c0;">
+                        <div class="alert-content">
+                            <strong>{{ vlan.vlan_id }}</strong> ({{ (vlan.confidence * 100)|round|int }}% confidence)
+                            <br>Type: {{ vlan.type|replace('_', ' ')|title }}
+                            <br>Subnets: {{ vlan.subnets|join(', ') }}
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                <div class="summary-card">
-                    <h3>Gateways</h3>
-                    <div class="value">{{ topology_stats.gateway_devices }}</div>
+                {% endif %}
+                
+                {% if topology_file %}
+                <div style="margin-top: 20px;">
+                    <a href="{{ topology_file }}" class="action-button" style="display: inline-block; background: var(--primary); color: white; text-decoration: none;">
+                        📊 View Full Topology Report
+                    </a>
                 </div>
+                {% endif %}
             </div>
-        </div>
-    </div>
-    
-    {% if subnet_analysis.vlan_hints.potential_vlans %}
-    <div style="margin-top: 30px;">
-        <h4>🏷️ Potential VLANs Detected</h4>
-        {% for vlan in subnet_analysis.vlan_hints.potential_vlans %}
-        <div class="alert alert-info" style="background: #e3f2fd; border: 1px solid #2196f3; color: #1565c0;">
-            <div class="alert-content">
-                <strong>{{ vlan.vlan_id }}</strong> ({{ (vlan.confidence * 100)|round|int }}% confidence)
-                <br>Type: {{ vlan.type|replace('_', ' ')|title }}
-                <br>Subnets: {{ vlan.subnets|join(', ') }}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    
-    <div style="margin-top: 20px;">
-        <a href="output/topology/" class="action-button" style="display: inline-block; background: var(--primary); color: white; text-decoration: none;">
-            📊 View Full Topology Report
-        </a>
-    </div>
-</div>
-{% endif %}
+            {% endif %}
+
             <!-- Recommendations -->
             <div class="recommendations">
                 <h3>💡 Recommendations</h3>
