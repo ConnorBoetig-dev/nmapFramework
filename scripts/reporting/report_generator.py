@@ -267,7 +267,7 @@ class ReportGenerator:
         return min(score, 100)
     
     def open_report(self, filepath):
-        """Cross-platform method to open HTML report in default browser"""
+        """Cross-platform method to open HTML report in default browser with error suppression"""
         file_url = filepath.absolute().as_uri()
         
         # Always display the clickable link first
@@ -276,22 +276,32 @@ class ReportGenerator:
         print(f"   (Ctrl+Click or Cmd+Click in most terminals)")
         
         try:
+            # Create subprocess kwargs to suppress stderr
+            kwargs = {}
+            if platform.system() != 'Windows':
+                # On Unix-like systems, redirect stderr to devnull
+                kwargs['stderr'] = subprocess.DEVNULL
+                kwargs['stdout'] = subprocess.DEVNULL
+            
             if platform.system() == 'Darwin':       # macOS
-                subprocess.call(['open', file_url])
+                subprocess.call(['open', file_url], **kwargs)
             elif platform.system() == 'Windows':    # Windows
                 os.startfile(str(filepath))
             else:                                   # Linux/Unix
                 # Try multiple methods for better compatibility
                 try:
-                    subprocess.call(['xdg-open', file_url])
+                    subprocess.call(['xdg-open', file_url], **kwargs)
                 except:
-                    # Fallback to webbrowser module
-                    webbrowser.open(file_url)
+                    # Fallback to webbrowser module (also suppress output)
+                    import contextlib
+                    with contextlib.redirect_stderr(None):
+                        webbrowser.open(file_url)
             
             print(f"🌐 Report opened in browser: {filepath.name}")
             return True
         except Exception as e:
-            print(f"⚠️  Could not auto-open report: {e}")
+            # Don't print the actual error as it might contain libva messages
+            print(f"⚠️  Could not auto-open report")
             print(f"💡 Please click the link above to open the report manually")
             return False
     
@@ -667,7 +677,7 @@ class ReportGenerator:
             'risk_score': risk_score,
             'categorized_issues': categorized_issues,
             'recommendations': self._generate_recommendations(insights),
-            'scan_metadata': self._extract_scan_metadata()  # Add this line
+            'scan_metadata': self._extract_scan_metadata()
         }
     
     def _calculate_risk_score(self, insights):

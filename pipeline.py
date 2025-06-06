@@ -9,6 +9,7 @@ import os
 import argparse
 import webbrowser
 import subprocess
+import platform
 from pathlib import Path
 from datetime import datetime
 import json
@@ -446,6 +447,10 @@ def run_scan_pipeline(target, scan_type, report_format, xml_file=None, no_open=F
         print(f"\n{Fore.BLUE}🔄 Running comparison analysis...{Style.RESET_ALL}")
         print(f"{Fore.BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Style.RESET_ALL}")
         
+        # First, let's make sure the scan report opened (give it a moment)
+        import time
+        time.sleep(1)
+        
         # Run diff analysis
         run_diff_analysis(
             base_file=compare_with,
@@ -456,7 +461,7 @@ def run_scan_pipeline(target, scan_type, report_format, xml_file=None, no_open=F
     
     return parsed_file
 
-def run_diff_analysis(base_file, compare_file, output_format, output_dir="output/reports/diffs"):
+def run_diff_analysis(base_file, compare_file, output_format, output_dir="output/reports/diffs", suppress_browser_errors=True):
     """Execute scan comparison analysis"""
     
     # Import diff module
@@ -504,12 +509,32 @@ def run_diff_analysis(base_file, compare_file, output_format, output_dir="output
         differ.export_to_html(html_file)
         generated_files.append(str(html_file))
         
-        # Auto-open HTML report
+        # Auto-open HTML report with error suppression
         try:
-            webbrowser.open(f'file://{html_file.absolute()}')
+            # Add small delay to ensure previous report had time to open
+            import time
+            time.sleep(0.5)
+            
+            # Create subprocess kwargs to suppress stderr
+            kwargs = {}
+            if suppress_browser_errors and platform.system() != 'Windows':
+                kwargs['stderr'] = subprocess.DEVNULL
+                kwargs['stdout'] = subprocess.DEVNULL
+            
+            if platform.system() == 'Darwin':       # macOS
+                subprocess.call(['open', str(html_file.absolute())], **kwargs)
+            elif platform.system() == 'Windows':    # Windows
+                os.startfile(str(html_file))
+            else:                                   # Linux/Unix
+                try:
+                    subprocess.call(['xdg-open', f'file://{html_file.absolute()}'], **kwargs)
+                except:
+                    # Fallback to webbrowser
+                    webbrowser.open(f'file://{html_file.absolute()}')
+            
             print(f"{Fore.BLUE}🌐 Opening diff report in browser...{Style.RESET_ALL}")
         except Exception as e:
-            print(f"{Fore.YELLOW}⚠️  Could not auto-open browser: {e}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}⚠️  Could not auto-open browser{Style.RESET_ALL}")
     
     if output_format in ['csv', 'both']:
         csv_file = output_path / f"diff_report_{timestamp}.csv"

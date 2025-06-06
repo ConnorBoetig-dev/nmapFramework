@@ -11,6 +11,7 @@ from datetime import datetime
 from collections import defaultdict
 import csv
 from jinja2 import Template
+import sys
 
 class ScanDiffer:
     def __init__(self):

@@ -6,3 +6,5 @@ venv/
 
 # ignore any temporary CSVs anywhere
 *.csv
+__pycache__/
+*.pyc
