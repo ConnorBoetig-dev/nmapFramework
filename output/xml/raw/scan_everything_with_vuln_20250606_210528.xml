@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.93 scan initiated Fri Jun  6 21:05:28 2025 as: nmap -oX output/xml/raw/scan_everything_with_vuln_20250606_210528.xml -&#45;stats-every 2s -v -T3 -sT -sV -A -p- -&#45;script=default,vuln,discovery 192.168.247.132 -->
+<nmaprun scanner="nmap" args="nmap -oX output/xml/raw/scan_everything_with_vuln_20250606_210528.xml -&#45;stats-every 2s -v -T3 -sT -sV -A -p- -&#45;script=default,vuln,discovery 192.168.247.132" start="1749258328" startstr="Fri Jun  6 21:05:28 2025" version="7.93" xmloutputversion="1.05">
+<scaninfo type="connect" protocol="tcp" numservices="65535" services="1-65535"/>
+<verbose level="1"/>
+<debugging level="0"/>
+<taskbegin task="NSE" time="1749258328"/>
+<taskprogress task="NSE" time="1749258330" percent="91.67" remaining="1" etc="1749258330"/>
+<taskprogress task="NSE" time="1749258332" percent="91.67" remaining="1" etc="1749258332"/>
+<taskprogress task="NSE" time="1749258334" percent="91.67" remaining="1" etc="1749258335"/>
+<taskprogress task="NSE" time="1749258336" percent="97.22" remaining="1" etc="1749258336"/>
+<taskprogress task="NSE" time="1749258338" percent="97.22" remaining="1" etc="1749258338"/>
+<taskend task="NSE" time="1749258339"/>
+<taskbegin task="NSE" time="1749258339"/>
+<taskend task="NSE" time="1749258339"/>
+<taskbegin task="NSE" time="1749258339"/>
+<taskend task="NSE" time="1749258339"/>
+<prescript><script id="hostmap-robtex" output="*TEMPORARILY DISABLED* due to changes in Robtex&apos;s API. See https://www.robtex.com/api/"/><script id="http-robtex-shared-ns" output="*TEMPORARILY DISABLED* due to changes in Robtex&apos;s API. See https://www.robtex.com/api/"/><script id="targets-asn" output="&#xa;  targets-asn.asn is a mandatory parameter&#xa;"/></prescript><taskbegin task="Ping Scan" time="1749258339"/>
+<hosthint><status state="up" reason="unknown-response" reason_ttl="0"/>
+<address addr="192.168.247.132" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+</hosthint>
+<taskend task="Ping Scan" time="1749258339" extrainfo="1 total hosts"/>
+<taskbegin task="Parallel DNS resolution of 1 host." time="1749258339"/>
+<taskend task="Parallel DNS resolution of 1 host." time="1749258339"/>
+<taskbegin task="Connect Scan" time="1749258339"/>
+<taskend task="Connect Scan" time="1749258340" extrainfo="65535 total ports"/>
+<taskbegin task="Service scan" time="1749258340"/>
+<taskbegin task="NSE" time="1749258340"/>
+<taskend task="NSE" time="1749258340"/>
+<taskbegin task="NSE" time="1749258340"/>
+<taskend task="NSE" time="1749258340"/>
+<taskbegin task="NSE" time="1749258340"/>
+<taskend task="NSE" time="1749258340"/>
+<host starttime="1749258339" endtime="1749258340"><status state="up" reason="conn-refused" reason_ttl="0"/>
+<address addr="192.168.247.132" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+<ports><extraports state="closed" count="65535">
+<extrareasons reason="conn-refused" count="65535" proto="tcp" ports="1-65535"/>
+</extraports>
+</ports>
+<hostscript><script id="dns-brute" output="Can&apos;t guess domain of &quot;192.168.247.132&quot;; use dns-brute.domain script argument."/><script id="fcrdns" output="FAIL (No PTR record)"><table key="&lt;none&gt;">
+<elem key="status">fail</elem>
+<elem key="reason">No PTR record</elem>
+</table>
+</script></hostscript><times srtt="85" rttvar="61" to="100000"/>
+</host>
+<taskbegin task="NSE" time="1749258340"/>
+<taskend task="NSE" time="1749258340"/>
+<taskbegin task="NSE" time="1749258340"/>
+<taskend task="NSE" time="1749258340"/>
+<taskbegin task="NSE" time="1749258340"/>
+<taskend task="NSE" time="1749258340"/>
+<runstats><finished time="1749258340" timestr="Fri Jun  6 21:05:40 2025" summary="Nmap done at Fri Jun  6 21:05:40 2025; 1 IP address (1 host up) scanned in 12.00 seconds" elapsed="12.00" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>
