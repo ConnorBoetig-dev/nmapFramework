@@ -1,0 +1,10 @@
+{
+  "scan_type": "quick",
+  "target": "192.168.247.132",
+  "timestamp": "20250606_231510",
+  "total_hosts": 1,
+  "hosts_up": 1,
+  "open_ports": 0,
+  "xml_file": "output/xml/raw/scan_quick_20250606_231510.xml",
+  "duration": 0.04832649230957031
+}

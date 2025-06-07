@@ -1,4 +1,4 @@
-#!/home/connorboetig/network_mapper/venv/bin/python3
+#!/home/connorboetig/nmapFramework/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
