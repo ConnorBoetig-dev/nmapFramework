@@ -13,6 +13,7 @@ import platform
 from pathlib import Path
 from datetime import datetime
 import json
+import importlib.util
 
 # Color output support
 try:
@@ -415,22 +416,95 @@ def run_scan_pipeline(
     if check_root_required(scan_type) and os.geteuid() != 0:
         elevate_privileges()
 
-    # Import scanning modules
-    scripts_dir = Path(__file__).parent / "scripts"
-    sys.path.append(str(scripts_dir / "scanning"))
-    sys.path.append(str(scripts_dir / "parsing"))
-    sys.path.append(str(scripts_dir / "reporting"))
-    sys.path.append(str(scripts_dir / "analysis"))
-    sys.path.append(str(scripts_dir / "visualization"))
+    # Import scanning modules with better error handling
+    current_dir = Path(__file__).parent
+    scripts_dir = current_dir / "scripts"
+    
+    # Ensure we're working with absolute paths
+    scripts_dir = scripts_dir.resolve()
+    
+    # Add all necessary paths to Python's import path
+    # Using insert(0, ...) to prioritize our modules
+    sys.path.insert(0, str(current_dir))
+    sys.path.insert(0, str(scripts_dir))
+    
+    # Add each subdirectory
+    for subdir in ['scanning', 'parsing', 'reporting', 'analysis', 'visualization']:
+        subdir_path = scripts_dir / subdir
+        if subdir_path.exists():
+            sys.path.insert(0, str(subdir_path))
+    
+    # Now try to import
     try:
-        from nmap_scanner import NetworkScanner
-        from xml_parser import NmapXMLParser
-        from report_generator import ReportGenerator
+        # Try absolute import first
+        try:
+            from scripts.scanning.nmap_scanner import NetworkScanner
+            from scripts.parsing.xml_parser import NmapXMLParser
+            from scripts.reporting.report_generator import ReportGenerator
+        except ImportError as e:
+            # Fall back to direct import
+            try:
+                from nmap_scanner import NetworkScanner
+                from xml_parser import NmapXMLParser
+                from report_generator import ReportGenerator
+            except ImportError as e2:
+                # Both imports failed, show detailed error
+                raise ImportError(f"Absolute import failed: {e}\nDirect import failed: {e2}")
+            
     except ImportError as e:
         print(f"{Fore.RED}Error importing modules: {e}{Style.RESET_ALL}")
-        print("Make sure all required scripts are in the scripts/ directory")
+        
+        # Detailed debugging information
+        print(f"\n{Fore.YELLOW}Debug Information:{Style.RESET_ALL}")
+        print(f"Current directory: {os.getcwd()}")
+        print(f"Script location: {Path(__file__).resolve()}")
+        print(f"Looking for modules in: {scripts_dir}")
+        print(f"Python path: {sys.path}")
+        
+        # Check if files exist
+        files_to_check = [
+            scripts_dir / "scanning" / "nmap_scanner.py",
+            scripts_dir / "parsing" / "xml_parser.py",
+            scripts_dir / "reporting" / "report_generator.py"
+        ]
+        
+        for file_path in files_to_check:
+            if file_path.exists():
+                print(f"{Fore.GREEN}✓{Style.RESET_ALL} Found: {file_path}")
+                # Try to import the file directly to see what error we get
+                try:
+                    import importlib.util
+                    spec = importlib.util.spec_from_file_location("test_module", file_path)
+                    test_module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(test_module)
+                    print(f"  {Fore.GREEN}✓{Style.RESET_ALL} File can be loaded")
+                except Exception as file_error:
+                    print(f"  {Fore.RED}✗{Style.RESET_ALL} Error loading file: {file_error}")
+            else:
+                print(f"{Fore.RED}✗{Style.RESET_ALL} Missing: {file_path}")
+        
+        # Check for common dependencies
+        print(f"\n{Fore.YELLOW}Checking dependencies:{Style.RESET_ALL}")
+        try:
+            import nmap
+            print(f"{Fore.GREEN}✓{Style.RESET_ALL} python-nmap is installed")
+        except ImportError:
+            print(f"{Fore.RED}✗{Style.RESET_ALL} python-nmap is NOT installed - run: pip install python-nmap")
+        
+        try:
+            import jinja2
+            print(f"{Fore.GREEN}✓{Style.RESET_ALL} jinja2 is installed")
+        except ImportError:
+            print(f"{Fore.RED}✗{Style.RESET_ALL} jinja2 is NOT installed - run: pip install jinja2")
+        
+        try:
+            import lxml
+            print(f"{Fore.GREEN}✓{Style.RESET_ALL} lxml is installed")
+        except ImportError:
+            print(f"{Fore.RED}✗{Style.RESET_ALL} lxml is NOT installed - run: pip install lxml")
+        
         sys.exit(1)
-
+    
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Step 1: Scanning (or use existing XML)
@@ -912,6 +986,9 @@ Examples:
                 target, scan_type, report_format = result
                 compare_with = None
             no_open = False
+            
+            # Run the scan pipeline
+            run_scan_pipeline(target, scan_type, report_format, compare_with=compare_with, no_open=no_open)
         else:
             # CLI mode
             if args.xml_file:
@@ -939,11 +1016,10 @@ Examples:
 
             no_open = args.no_open
             compare_with = None
-
-        # Run the scanning pipeline
-        run_scan_pipeline(
-            target, scan_type, report_format, args.xml_file, no_open, compare_with
-        )
+            
+            # Run the scan pipeline
+            run_scan_pipeline(target, scan_type, report_format, xml_file=args.xml_file, 
+                            no_open=no_open, compare_with=compare_with)
 
     else:
         parser.print_help()
