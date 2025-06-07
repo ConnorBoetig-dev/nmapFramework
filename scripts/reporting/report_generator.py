@@ -1031,22 +1031,26 @@ class ReportGenerator:
     <title>Network Security Analysis Report</title>
     <style>
         :root {
-            --primary: #667eea;
-            --secondary: #764ba2;
-            --success: #28a745;
-            --danger: #dc3545;
-            --warning: #ffc107;
-            --info: #17a2b8;
-            --dark: #343a40;
-            --light: #f8f9fa;
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #1e1e1e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent: #00ff88;
+            --danger: #ff4444;
+            --warning: #ffaa00;
+            --info: #00aaff;
+            --success: #00ff88;
+            --border: #333;
         }
 
         * { box-sizing: border-box; }
         
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             margin: 0;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
             padding: 20px;
         }
@@ -1054,249 +1058,63 @@ class ReportGenerator:
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            padding: 40px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 30px;
+            margin-bottom: 30px;
             position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 10px,
-                rgba(255,255,255,.05) 10px,
-                rgba(255,255,255,.05) 20px
-            );
-            animation: slide 20s linear infinite;
-        }
-
-        @keyframes slide {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
-        }
-
-        .header-content {
-            position: relative;
-            z-index: 1;
         }
 
         .header h1 {
-            margin: 0 0 10px 0;
-            font-size: 2.5em;
-            font-weight: 700;
+            margin: 0 0 20px 0;
+            font-size: 2em;
+            color: var(--accent);
+            font-weight: 300;
+            letter-spacing: 2px;
         }
 
         .header-meta {
             display: flex;
             gap: 30px;
-            margin-top: 20px;
             flex-wrap: wrap;
         }
 
         .header-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .content {
-            padding: 40px;
+            color: var(--text-secondary);
+            font-size: 0.9em;
         }
 
         .risk-indicator {
             position: absolute;
-            top: 40px;
-            right: 40px;
+            top: 30px;
+            right: 30px;
             text-align: center;
-            background: white;
-            border-radius: 12px;
+            border: 1px solid var(--border);
             padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            min-width: 150px;
+            background: var(--bg-card);
         }
 
         .risk-score {
-            font-size: 3em;
-            font-weight: 700;
+            font-size: 2.5em;
+            font-weight: bold;
             margin: 10px 0;
         }
 
-        .risk-level {
-            font-size: 1.2em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .summary-card {
-            background: var(--light);
-            padding: 25px;
-            border-radius: 12px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .summary-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-
-        .summary-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--primary);
-        }
-
-        .summary-card.danger::before { background: var(--danger); }
-        .summary-card.warning::before { background: var(--warning); }
-        .summary-card.success::before { background: var(--success); }
-        .summary-card.info::before { background: var(--info); }
-
-        .summary-card h3 {
-            margin: 0 0 15px 0;
-            color: #6c757d;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .summary-card .value {
-            font-size: 2.5em;
-            font-weight: 700;
-            color: var(--dark);
-            line-height: 1;
-        }
-
-        .summary-card .subtitle {
-            font-size: 0.9em;
-            color: #6c757d;
-            margin-top: 8px;
-        }
-
-        .section {
-            margin-bottom: 40px;
-            background: var(--light);
-            border-radius: 12px;
-            padding: 30px;
-        }
-
-        .section-title {
-            font-size: 1.8em;
-            font-weight: 700;
-            margin-bottom: 25px;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title::after {
-            content: '';
-            flex: 1;
-            height: 2px;
-            background: linear-gradient(to right, var(--primary), transparent);
-        }
-
-        .alert {
-            padding: 16px 20px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .alert-icon {
-            font-size: 1.2em;
-            line-height: 1;
-        }
-
-        .alert-content {
-            flex: 1;
-        }
-
-        .alert-high {
-            background-color: #fee;
-            border: 1px solid #fcc;
-            color: var(--danger);
-        }
-
-        .alert-medium {
-            background-color: #fffbeb;
-            border: 1px solid #fed97a;
-            color: #8b5d0a;
-        }
-
-        .issue-category {
-            margin-bottom: 25px;
-        }
-
-        .category-header {
-            font-weight: 600;
-            font-size: 1.1em;
-            margin-bottom: 12px;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .category-count {
-            background: var(--primary);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-        }
-
         .quick-actions {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 40px;
-            color: white;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 30px;
         }
 
         .quick-actions h3 {
-            margin: 0 0 20px 0;
-            font-size: 1.5em;
+            margin: 0 0 15px 0;
+            color: var(--accent);
+            font-size: 1.2em;
+            font-weight: 300;
         }
 
         .action-buttons {
@@ -1306,174 +1124,185 @@ class ReportGenerator:
         }
 
         .action-button {
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 10px 20px;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            backdrop-filter: blur(10px);
+            font-family: inherit;
         }
 
         .action-button:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:hover {
+            border-color: var(--accent);
+        }
+
+        .summary-card h3 {
+            margin: 0 0 10px 0;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .summary-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .summary-card.danger { border-color: var(--danger); }
+        .summary-card.warning { border-color: var(--warning); }
+        .summary-card.success { border-color: var(--success); }
+        .summary-card.info { border-color: var(--info); }
+
+        .section {
+            margin-bottom: 30px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 3px solid;
+            background: var(--bg-card);
+        }
+
+        .alert-high {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .alert-medium {
+            border-color: var(--warning);
+            color: var(--warning);
         }
 
         .host-card {
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 15px;
             transition: all 0.3s ease;
         }
 
         .host-card:hover {
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            transform: translateY(-2px);
+            border-color: var(--accent);
         }
 
         .host-header {
-            font-weight: 700;
-            font-size: 1.2em;
-            color: var(--dark);
+            font-weight: bold;
+            font-size: 1.1em;
             margin-bottom: 15px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
 
         .host-badge {
-            background: var(--info);
-            color: white;
+            background: var(--accent);
+            color: var(--bg-primary);
             padding: 4px 12px;
-            border-radius: 20px;
             font-size: 0.8em;
-            font-weight: 500;
-        }
-
-        .hardware-info {
-            margin: 15px 0;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .hardware-info strong {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--dark);
-        }
-
-        .hardware-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 10px;
-            margin-top: 8px;
-        }
-
-        .hardware-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
         .port-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 12px;
+            gap: 10px;
             margin-top: 15px;
         }
 
         .port-item {
-            background: var(--light);
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 3px solid var(--success);
-            font-family: 'Consolas', 'Monaco', monospace;
+            background: var(--bg-primary);
+            padding: 10px;
+            border: 1px solid var(--border);
             font-size: 0.9em;
             transition: all 0.2s ease;
         }
 
         .port-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-color: var(--accent);
         }
 
         .port-item.risky {
-            border-left-color: var(--warning);
-            background: #fffbeb;
-        }
-
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
+            border-color: var(--warning);
         }
 
         .chart-container {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .chart-container h4 {
-            margin: 0 0 20px 0;
-            color: var(--dark);
-            font-size: 1.2em;
+            background: var(--bg-card);
+            padding: 20px;
+            margin-bottom: 20px;
         }
 
         .chart-bar {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .chart-label {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             font-size: 0.9em;
+            color: var(--text-secondary);
         }
 
         .chart-progress {
-            height: 24px;
-            background: #e9ecef;
-            border-radius: 12px;
-            overflow: hidden;
+            height: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
             position: relative;
         }
 
         .chart-fill {
             height: 100%;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            border-radius: 12px;
+            background: var(--accent);
             transition: width 1s ease;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-            color: white;
-            font-size: 0.8em;
-            font-weight: 600;
         }
 
         .recommendations {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-top: 40px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent);
+            padding: 25px;
+            margin-top: 30px;
         }
 
         .recommendations h3 {
             margin: 0 0 20px 0;
-            font-size: 1.5em;
+            color: var(--accent);
         }
 
         .recommendations ul {
@@ -1483,400 +1312,199 @@ class ReportGenerator:
         }
 
         .recommendations li {
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .recommendations li:last-child {
-            border-bottom: none;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
         }
 
         .footer {
             text-align: center;
-            padding: 40px;
-            background: var(--light);
-            color: #6c757d;
-            border-top: 1px solid #dee2e6;
+            padding: 30px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+            margin-top: 50px;
         }
 
         .footer code {
-            background: #e9ecef;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.9em;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header { padding: 30px 20px; }
-            .content { padding: 20px; }
-            .risk-indicator { position: static; margin-bottom: 20px; }
-            .summary-grid { grid-template-columns: 1fr; }
-            .stats-container { grid-template-columns: 1fr; }
-        }
-
-        /* Print styles */
-        @media print {
-            body { background: white; }
-            .container { box-shadow: none; }
-            .quick-actions { display: none; }
-            .host-card { break-inside: avoid; }
+            background: var(--bg-card);
+            padding: 5px 10px;
+            border: 1px solid var(--border);
+            color: var(--accent);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div class="header-content">
-                <h1>🛡️ Network Security Analysis Report</h1>
-                <div class="header-meta">
-                    <div class="header-meta-item">
-                        📅 {{ generated_time }}
-                    </div>
-                    <div class="header-meta-item">
-                        🔍 {{ scan_info.scanner }} {{ scan_info.version }}
-                    </div>
-                    <div class="header-meta-item">
-                        ⚡ Scan Type: {{ scan_metadata.scan_type }}
-                    </div>
+            <h1>NETWORK SECURITY ANALYSIS</h1>
+            <div class="header-meta">
+                <div class="header-meta-item">
+                    {{ generated_time }}
+                </div>
+                <div class="header-meta-item">
+                    {{ scan_info.scanner }} {{ scan_info.version }}
+                </div>
+                <div class="header-meta-item">
+                    SCAN TYPE: {{ scan_metadata.scan_type }}
                 </div>
             </div>
             <div class="risk-indicator">
-                <div>Risk Score</div>
+                <div>RISK SCORE</div>
                 <div class="risk-score" style="color: {{ risk_score.color }}">{{ risk_score.score }}</div>
-                <div class="risk-level" style="color: {{ risk_score.color }}">{{ risk_score.level }}</div>
+                <div style="color: {{ risk_score.color }}">{{ risk_score.level }}</div>
             </div>
         </div>
 
-        <div class="content">
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h3>🚀 Quick Actions</h3>
-                <div class="action-buttons">
-                    <button class="action-button" onclick="window.print()">
-                        🖨️ Print Report
-                    </button>
-                    <button class="action-button" onclick="copyRescanCommand()">
-                        📋 Copy Rescan Command
-                    </button>
-                    <button class="action-button" onclick="exportData()">
-                        💾 Export Data
-                    </button>
-                    <button class="action-button" onclick="scrollToIssues()">
-                        ⚠️ Jump to Issues
-                    </button>
-                </div>
-            </div>
-
-            <!-- Executive Summary -->
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <h3>Total Hosts</h3>
-                    <div class="value">{{ insights.total_hosts }}</div>
-                    <div class="subtitle">Scanned in network</div>
-                </div>
-                <div class="summary-card success">
-                    <h3>Hosts Online</h3>
-                    <div class="value">{{ insights.hosts_up }}</div>
-                    <div class="subtitle">{{ ((insights.hosts_up / insights.total_hosts * 100) | round(1)) if insights.total_hosts > 0 else 0 }}% response rate</div>
-                </div>
-                <div class="summary-card info">
-                    <h3>Open Ports</h3>
-                    <div class="value">{{ insights.total_open_ports }}</div>
-                    <div class="subtitle">Across all hosts</div>
-                </div>
-                <div class="summary-card warning">
-                    <h3>Services Found</h3>
-                    <div class="value">{{ insights.unique_services|length }}</div>
-                    <div class="subtitle">Unique service types</div>
-                </div>
-                <div class="summary-card danger">
-                    <h3>Security Issues</h3>
-                    <div class="value">{{ total_issues }}</div>
-                    <div class="subtitle">
-                        {% if severity_counts.high %}{{ severity_counts.high }} critical{% endif %}
-                        {% if severity_counts.high and severity_counts.medium %}, {% endif %}
-                        {% if severity_counts.medium %}{{ severity_counts.medium }} medium{% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Security Issues -->
-            {% if categorized_issues %}
-            <div class="section" id="security-issues">
-                <div class="section-title">🔒 Security Analysis</div>
-                {% for category, issues in categorized_issues.items() %}
-                <div class="issue-category">
-                    <div class="category-header">
-                        {{ category }}
-                        <span class="category-count">{{ issues|length }}</span>
-                    </div>
-                    {% for issue in issues %}
-                    <div class="alert alert-{{ issue.severity }}">
-                        <div class="alert-icon">
-                            {% if issue.severity == 'high' %}🔴{% else %}🟡{% endif %}
-                        </div>
-                        <div class="alert-content">
-                            <strong>{{ issue.host }}:{{ issue.port }}</strong> - {{ issue.issue }}
-                            <br><small>Service: {{ issue.service }} | Protocol: TCP</small>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- Network Statistics -->
-            <div class="section">
-                <div class="section-title">📊 Network Statistics</div>
-                <div class="stats-container">
-                    <div class="chart-container">
-                        <h4>Top Services</h4>
-                        {% for service, count in service_stats %}
-                        <div class="chart-bar">
-                            <div class="chart-label">
-                                <span>{{ service }}</span>
-                                <span>{{ count }}</span>
-                            </div>
-                            <div class="chart-progress">
-                                <div class="chart-fill" style="width: {{ (count / service_stats[0][1] * 100) if service_stats[0][1] > 0 else 0 }}%">
-                                    {{ ((count / insights.total_open_ports * 100) | round(1)) if insights.total_open_ports > 0 else 0 }}%
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="chart-container">
-                        <h4>Common Ports</h4>
-                        {% for port, count in port_stats %}
-                        <div class="chart-bar">
-                            <div class="chart-label">
-                                <span>Port {{ port }}</span>
-                                <span>{{ count }} hosts</span>
-                            </div>
-                            <div class="chart-progress">
-                                <div class="chart-fill" style="width: {{ (count / port_stats[0][1] * 100) if port_stats[0][1] > 0 else 0 }}%">
-                                    {{ ((count / insights.hosts_up * 100) | round(1)) if insights.hosts_up > 0 else 0 }}%
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                {% if device_type_stats %}
-                <div class="chart-container" style="margin-top: 30px;">
-                    <h4>Device Types</h4>
-                    {% for device_type, count in device_type_stats %}
-                    <div class="chart-bar">
-                        <div class="chart-label">
-                            <span>{{ device_type|title }}</span>
-                            <span>{{ count }} devices</span>
-                        </div>
-                        <div class="chart-progress">
-                            <div class="chart-fill" style="width: {{ (count / insights.hosts_up * 100) if insights.hosts_up > 0 else 0 }}%">
-                                {{ ((count / insights.hosts_up * 100) | round(1)) if insights.hosts_up > 0 else 0 }}%
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                {% if os_stats %}
-                <div class="chart-container" style="margin-top: 30px;">
-                    <h4>Operating Systems</h4>
-                    {% for os, count in os_stats %}
-                    <div class="chart-bar">
-                        <div class="chart-label">
-                            <span>{{ os }}</span>
-                            <span>{{ count }} hosts</span>
-                        </div>
-                        <div class="chart-progress">
-                            <div class="chart-fill" style="width: {{ (count / insights.hosts_up * 100) if insights.hosts_up > 0 else 0 }}%">
-                                {{ ((count / insights.hosts_up * 100) | round(1)) if insights.hosts_up > 0 else 0 }}%
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Certificate Warnings -->
-            {% if expiring_certs %}
-            <div class="section">
-                <div class="section-title">🔐 Certificate Status</div>
-                {% for cert in expiring_certs %}
-                <div class="alert {% if cert.expired %}alert-high{% else %}alert-medium{% endif %}">
-                    <div class="alert-icon">
-                        {% if cert.expired %}🔴{% else %}🟡{% endif %}
-                    </div>
-                    <div class="alert-content">
-                        <strong>{{ cert.host }}:{{ cert.port }}</strong> - 
-                        {% if cert.expired %}
-                            Certificate EXPIRED {{ -cert.days_remaining }} days ago
-                        {% else %}
-                            Certificate expiring in {{ cert.days_remaining }} days
-                        {% endif %}
-                        <br><small>CN: {{ cert.common_name }}</small>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- Host Details -->
-            <div class="section">
-                <div class="section-title">🖥️ Host Details</div>
-                {% for host in hosts %}
-                <div class="host-card">
-                    <div class="host-header">
-                        <span>
-                            {{ host.addresses.ipv4 or host.addresses.ipv6 or 'Unknown IP' }}
-                            {% if host.hostnames %}
-                                ({{ host.hostnames[0].name }})
-                            {% endif %}
-                        </span>
-                        <div style="display: flex; gap: 10px;">
-                            {% if host.device_classification %}
-                                {% set device_type = host.device_classification.device_type %}
-                                {% set confidence = (host.device_classification.confidence * 100)|round|int %}
-                                <span class="host-badge" style="background: #667eea;">
-                                    {% if device_type == 'router' %}🌐
-                                    {% elif device_type == 'switch' %}🔀
-                                    {% elif device_type == 'firewall' %}🛡️
-                                    {% elif device_type == 'server' %}🖥️
-                                    {% elif device_type == 'workstation' %}💻
-                                    {% elif device_type == 'printer' %}🖨️
-                                    {% elif device_type == 'iot' %}📡
-                                    {% elif device_type == 'storage' %}💾
-                                    {% else %}❓{% endif %}
-                                    {{ device_type|title }} ({{ confidence }}%)
-                                </span>
-                            {% endif %}
-                            {% if host.os.matches %}
-                                {% set best_os = host.os.matches|max(attribute='accuracy') %}
-                                {% if best_os.accuracy > 70 %}
-                                <span class="host-badge">{{ best_os.name }}</span>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    {% if host.hardware_info %}
-                    <div class="hardware-info">
-                        <strong>Hardware Information:</strong>
-                        <div class="hardware-info-grid">
-                            {% if host.hardware_info.manufacturer or host.hardware_info.model %}
-                            <div class="hardware-item">🏭 <strong>Model:</strong> {{ host.hardware_info.manufacturer|default('', true) }} {{ host.hardware_info.model|default('', true) }}</div>
-                            {% endif %}
-                            {% if host.hardware_info.serial_number %}
-                            <div class="hardware-item">🔢 <strong>Serial:</strong> {{ host.hardware_info.serial_number }}</div>
-                            {% endif %}
-                            {% if host.hardware_info.firmware %}
-                            <div class="hardware-item">📟 <strong>Firmware:</strong> {{ host.hardware_info.firmware }}</div>
-                            {% endif %}
-                            {% if host.hardware_info.mac_vendor %}
-                            <div class="hardware-item">🏢 <strong>MAC Vendor:</strong> {{ host.hardware_info.mac_vendor }}</div>
-                            {% endif %}
-                            {% if host.hardware_info.uptime %}
-                            <div class="hardware-item">⏱️ <strong>Uptime:</strong> {{ host.hardware_info.uptime }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% set open_ports = host.ports|selectattr('state', 'equalto', 'open')|list %}
-                    {% if open_ports %}
-                    <div>
-                        <strong>Open Ports ({{ open_ports|length }}):</strong>
-                        <div class="port-grid">
-                            {% for port in open_ports %}
-                            {% set is_risky = port.port in [21, 23, 135, 139, 445, 3389, 5900] or port.service.name in ['telnet', 'ftp', 'vnc'] %}
-                            <div class="port-item {% if is_risky %}risky{% endif %}">
-                                <strong>{{ port.port }}/{{ port.protocol }}</strong> - {{ port.service.name or 'unknown' }}
-                                {% if port.service.product %}
-                                    <br>{{ port.service.product }}
-                                    {% if port.service.version %}v{{ port.service.version }}{% endif %}
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-	    
-            <!-- Network Topology Section -->
-            {% if has_topology %}
-            <div class="section">
-                <div class="section-title">🗺️ Network Topology</div>
-                
-                <div class="stats-container">
-                    <div class="chart-container">
-                        <h4>Network Segments</h4>
-                        <div class="summary-grid" style="grid-template-columns: repeat(3, 1fr);">
-                            <div class="summary-card">
-                                <h3>Segments</h3>
-                                <div class="value">{{ topology_stats.segments|length }}</div>
-                            </div>
-                            <div class="summary-card">
-                                <h3>Subnets</h3>
-                                <div class="value">{{ topology_stats.total_subnets }}</div>
-                            </div>
-                            <div class="summary-card">
-                                <h3>Gateways</h3>
-                                <div class="value">{{ topology_stats.gateway_devices }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                {% if subnet_analysis.vlan_hints.potential_vlans %}
-                <div style="margin-top: 30px;">
-                    <h4>🏷️ Potential VLANs Detected</h4>
-                    {% for vlan in subnet_analysis.vlan_hints.potential_vlans %}
-                    <div class="alert alert-info" style="background: #e3f2fd; border: 1px solid #2196f3; color: #1565c0;">
-                        <div class="alert-content">
-                            <strong>{{ vlan.vlan_id }}</strong> ({{ (vlan.confidence * 100)|round|int }}% confidence)
-                            <br>Type: {{ vlan.type|replace('_', ' ')|title }}
-                            <br>Subnets: {{ vlan.subnets|join(', ') }}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                
+        <div class="quick-actions">
+            <h3>QUICK ACTIONS</h3>
+            <div class="action-buttons">
+                <button class="action-button" onclick="window.print()">
+                    PRINT REPORT
+                </button>
+                <button class="action-button" onclick="copyRescanCommand()">
+                    COPY RESCAN
+                </button>
+                <button class="action-button" onclick="exportData()">
+                    EXPORT DATA
+                </button>
+                <button class="action-button" onclick="scrollToIssues()">
+                    JUMP TO ISSUES
+                </button>
                 {% if topology_file %}
-                <div style="margin-top: 20px;">
-                    <a href="{{ topology_file }}" class="action-button" style="display: inline-block; background: var(--primary); color: white; text-decoration: none;">
-                        📊 View Full Topology Report
-                    </a>
+                <a href="{{ topology_file }}" class="action-button" style="text-decoration: none;">
+                    VIEW TOPOLOGY MAP
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>TOTAL HOSTS</h3>
+                <div class="value">{{ insights.total_hosts }}</div>
+            </div>
+            <div class="summary-card success">
+                <h3>HOSTS ONLINE</h3>
+                <div class="value">{{ insights.hosts_up }}</div>
+            </div>
+            <div class="summary-card info">
+                <h3>OPEN PORTS</h3>
+                <div class="value">{{ insights.total_open_ports }}</div>
+            </div>
+            <div class="summary-card warning">
+                <h3>SERVICES</h3>
+                <div class="value">{{ insights.unique_services|length }}</div>
+            </div>
+            <div class="summary-card danger">
+                <h3>SECURITY ISSUES</h3>
+                <div class="value">{{ total_issues }}</div>
+            </div>
+        </div>
+
+        <!-- Security Issues -->
+        {% if categorized_issues %}
+        <div class="section" id="security-issues">
+            <div class="section-title">SECURITY ANALYSIS</div>
+            {% for category, issues in categorized_issues.items() %}
+            <div style="margin-bottom: 25px;">
+                <h4 style="color: var(--text-secondary);">{{ category }} ({{ issues|length }})</h4>
+                {% for issue in issues %}
+                <div class="alert alert-{{ issue.severity }}">
+                    <strong>{{ issue.host }}:{{ issue.port }}</strong> - {{ issue.issue }}
+                    <br><small>Service: {{ issue.service }} | Protocol: TCP</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Host Details -->
+        <div class="section">
+            <div class="section-title">HOST DETAILS</div>
+            {% for host in hosts %}
+            <div class="host-card">
+                <div class="host-header">
+                    <span>
+                        {{ host.addresses.ipv4 or host.addresses.ipv6 or 'Unknown IP' }}
+                        {% if host.hostnames %}
+                            ({{ host.hostnames[0].name }})
+                        {% endif %}
+                    </span>
+                    <div>
+                        {% if host.device_classification %}
+                            {% set device_type = host.device_classification.device_type %}
+                            {% set confidence = (host.device_classification.confidence * 100)|round|int %}
+                            <span class="host-badge">{{ device_type|upper }} {{ confidence }}%</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% set open_ports = host.ports|selectattr('state', 'equalto', 'open')|list %}
+                {% if open_ports %}
+                <div>
+                    <strong>OPEN PORTS ({{ open_ports|length }}):</strong>
+                    <div class="port-grid">
+                        {% for port in open_ports %}
+                        {% set is_risky = port.port in [21, 23, 135, 139, 445, 3389, 5900] %}
+                        <div class="port-item {% if is_risky %}risky{% endif %}">
+                            <strong>{{ port.port }}/{{ port.protocol }}</strong> - {{ port.service.name or 'unknown' }}
+                            {% if port.service.product %}
+                                <br>{{ port.service.product }}
+                                {% if port.service.version %}v{{ port.service.version }}{% endif %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% endif %}
             </div>
-            {% endif %}
+            {% endfor %}
+        </div>
 
-            <!-- Recommendations -->
-            <div class="recommendations">
-                <h3>💡 Recommendations</h3>
-                <ul>
-                    {% for rec in recommendations %}
-                    <li>
-                        <span>{{ loop.index }}.</span>
-                        <span>{{ rec }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
+        <!-- Network Topology Section -->
+        {% if has_topology %}
+        <div class="section">
+            <div class="section-title">NETWORK TOPOLOGY</div>
+            
+            <div class="summary-grid" style="margin-bottom: 20px;">
+                <div class="summary-card">
+                    <h3>SEGMENTS</h3>
+                    <div class="value">{{ topology_stats.segments|length }}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>SUBNETS</h3>
+                    <div class="value">{{ topology_stats.total_subnets }}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>GATEWAYS</h3>
+                    <div class="value">{{ topology_stats.gateway_devices }}</div>
+                </div>
             </div>
+            
+            {% if subnet_analysis.vlan_hints.potential_vlans %}
+            <div style="margin-top: 30px;">
+                <h4 style="color: var(--text-secondary);">POTENTIAL VLANS DETECTED</h4>
+                {% for vlan in subnet_analysis.vlan_hints.potential_vlans %}
+                <div class="alert" style="border-color: var(--info);">
+                    <strong>{{ vlan.vlan_id }}</strong> ({{ (vlan.confidence * 100)|round|int }}% confidence)
+                    <br>Type: {{ vlan.type|replace('_', ' ')|title }}
+                    <br>Subnets: {{ vlan.subnets|join(', ') }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Recommendations -->
+        <div class="recommendations">
+            <h3>RECOMMENDATIONS</h3>
+            <ul>
+                {% for rec in recommendations %}
+                <li>{{ loop.index }}. {{ rec }}</li>
+                {% endfor %}
+            </ul>
         </div>
 
         <div class="footer">
@@ -1886,18 +1514,6 @@ class ReportGenerator:
     </div>
 
     <script>
-        // Animation for progress bars
-        window.addEventListener('load', function() {
-            const fills = document.querySelectorAll('.chart-fill');
-            fills.forEach(fill => {
-                const width = fill.style.width;
-                fill.style.width = '0';
-                setTimeout(() => {
-                    fill.style.width = width;
-                }, 100);
-            });
-        });
-
         // Copy rescan command
         function copyRescanCommand() {
             const command = `python3 pipeline.py {{ scan_metadata.target }} -t {{ scan_metadata.scan_type }}`;
@@ -1914,7 +1530,7 @@ class ReportGenerator:
             }
         }
 
-        // Export data (simplified version)
+        // Export data
         function exportData() {
             const data = {
                 scan_date: '{{ generated_time }}',
@@ -1932,11 +1548,6 @@ class ReportGenerator:
             a.download = 'network_scan_summary.json';
             a.click();
         }
-
-        // Auto-refresh notification (for demo)
-        setTimeout(() => {
-            console.log('Report generated successfully at {{ generated_time }}');
-        }, 1000);
     </script>
 </body>
 </html>
